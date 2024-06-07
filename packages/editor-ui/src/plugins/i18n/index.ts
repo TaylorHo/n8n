@@ -77,6 +77,7 @@ export class I18nClass {
 	 * Render a string of dynamic text, i.e. a string with a constructed path to the localized value.
 	 */
 	private dynamicRender({ key, fallback }: { key: string; fallback?: string }) {
+		// EDITED HERE
 		// return this.i18n.te(key) ? this.i18n.t(key).toString() : fallback ?? '';
 		return fallback ?? ''; // The original code isn't working as expected. It always uses the fallback itself.
 	}

@@ -226,6 +226,7 @@ export class License {
 	}
 
 	isFeatureEnabled(feature: BooleanLicenseFeature) {
+		// EDITED HERE
 		// return this.manager?.hasFeatureEnabled(feature) ?? false;
 		return this.manager?.hasFeatureEnabled(feature) ?? true;
 	}

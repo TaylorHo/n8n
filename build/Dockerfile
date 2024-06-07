@@ -33,9 +33,11 @@ RUN set -eux; \
   find /usr/local -type f -name 'LICENSE' -delete && \
   find /usr/local -type f -name 'README.md' -delete && \
   find /usr/local -type f -name 'CHANGELOG.md' -delete && \
+  find /usr/local -type f -name 'SECURITY.md' -delete && \
   find /usr/local -type f -name 'CONTRIBUTING.md' -delete && \
   find /usr/local -type f -name 'CODE_OF_CONDUCT.md' -delete && \
   find /usr/local -type f -name '.travis.yml' -delete && \
+  find /usr/local -type f -name '.dockerignore' -delete && \
   find /usr/local -type f -name '.yarnrc' -delete && \
   find /usr/local -type f -name '.npmrc' -delete && \
   find /usr/local -type f -name 'package-lock.json' -delete && \
