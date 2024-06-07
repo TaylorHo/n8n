@@ -1,0 +1,15 @@
+localhost {
+	reverse_proxy n8n:5678 {
+		flush_interval -1
+	}
+
+	encode gzip
+
+	header {
+		# enable HSTS
+		Strict-Transport-Security max-age=604800;
+
+		# clickjacking protection
+		X-Frame-Options SAMEORIGIN
+	}
+}
