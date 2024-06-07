@@ -39,7 +39,7 @@ export class License {
 		private readonly orchestrationService: OrchestrationService,
 		private readonly settingsRepository: SettingsRepository,
 		private readonly usageMetricsService: UsageMetricsService,
-	) {}
+	) { }
 
 	/**
 	 * Whether this instance should renew the license - on init and periodically.
@@ -77,10 +77,10 @@ export class License {
 		const autoRenewOffset = config.getEnv('license.autoRenewOffset');
 		const saveCertStr = isMainInstance
 			? async (value: TLicenseBlock) => await this.saveCertStr(value)
-			: async () => {};
+			: async () => { };
 		const onFeatureChange = isMainInstance
 			? async (features: TFeatures) => await this.onFeatureChange(features)
-			: async () => {};
+			: async () => { };
 		const collectUsageMetrics = isMainInstance
 			? async () => await this.usageMetricsService.collectUsageMetrics()
 			: async () => [];
@@ -226,7 +226,8 @@ export class License {
 	}
 
 	isFeatureEnabled(feature: BooleanLicenseFeature) {
-		return this.manager?.hasFeatureEnabled(feature) ?? false;
+		// return this.manager?.hasFeatureEnabled(feature) ?? false;
+		return this.manager?.hasFeatureEnabled(feature) ?? true;
 	}
 
 	isSharingEnabled() {

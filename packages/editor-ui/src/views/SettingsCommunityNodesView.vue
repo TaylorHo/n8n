@@ -216,9 +216,9 @@ export default defineComponent({
 	},
 	methods: {
 		onClickEmptyStateButton(): void {
-			if (this.settingsStore.isDesktopDeployment) {
-				return this.goToUpgrade();
-			}
+			// if (this.settingsStore.isDesktopDeployment) {
+			// 	return this.goToUpgrade();
+			// }
 
 			this.openInstallModal();
 		},
