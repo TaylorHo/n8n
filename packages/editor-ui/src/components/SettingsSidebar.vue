@@ -84,15 +84,15 @@ export default defineComponent({
 					route: { to: { name: VIEWS.EXTERNAL_SECRETS_SETTINGS } },
 				},
 
-				{
-					id: 'settings-source-control',
-					icon: 'code-branch',
-					label: this.$locale.baseText('settings.sourceControl.title'),
-					position: 'top',
-					available: this.canAccessSourceControl(),
-					route: { to: { name: VIEWS.SOURCE_CONTROL } },
-				},
 				// EDITED HERE
+				// {
+				// 	id: 'settings-source-control',
+				// 	icon: 'code-branch',
+				// 	label: this.$locale.baseText('settings.sourceControl.title'),
+				// 	position: 'top',
+				// 	available: this.canAccessSourceControl(),
+				// 	route: { to: { name: VIEWS.SOURCE_CONTROL } },
+				// },
 				// {
 				// 	id: 'settings-sso',
 				// 	icon: 'user-lock',

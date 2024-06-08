@@ -11,8 +11,11 @@ export const useSourceControlStore = defineStore('sourceControl', () => {
 	const rootStore = useRootStore();
 	const settingsStore = useSettingsStore();
 
-	const isEnterpriseSourceControlEnabled = computed(() =>
-		settingsStore.isEnterpriseFeatureEnabled(EnterpriseEditionFeature.SourceControl),
+	const isEnterpriseSourceControlEnabled = computed(
+		() =>
+			// EDITED HERE
+			// settingsStore.isEnterpriseFeatureEnabled(EnterpriseEditionFeature.SourceControl),
+			false,
 	);
 
 	const sshKeyTypes: SshKeyTypes = ['ed25519', 'rsa'];
