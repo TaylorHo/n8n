@@ -134,14 +134,15 @@ export default defineComponent({
 				}
 			}
 
-			menuItems.push({
-				id: 'settings-log-streaming',
-				icon: 'sign-in-alt',
-				label: this.$locale.baseText('settings.log-streaming'),
-				position: 'top',
-				available: this.canAccessLogStreamingSettings(),
-				route: { to: { name: VIEWS.LOG_STREAMING_SETTINGS } },
-			});
+			// EDITED HERE
+			// menuItems.push({
+			// 	id: 'settings-log-streaming',
+			// 	icon: 'sign-in-alt',
+			// 	label: this.$locale.baseText('settings.log-streaming'),
+			// 	position: 'top',
+			// 	available: this.canAccessLogStreamingSettings(),
+			// 	route: { to: { name: VIEWS.LOG_STREAMING_SETTINGS } },
+			// });
 
 			menuItems.push({
 				id: 'settings-community-nodes',
