@@ -84,31 +84,30 @@ export default defineComponent({
 					route: { to: { name: VIEWS.EXTERNAL_SECRETS_SETTINGS } },
 				},
 
-				// EDITED HERE
-				// {
-				// 	id: 'settings-source-control',
-				// 	icon: 'code-branch',
-				// 	label: this.$locale.baseText('settings.sourceControl.title'),
-				// 	position: 'top',
-				// 	available: this.canAccessSourceControl(),
-				// 	route: { to: { name: VIEWS.SOURCE_CONTROL } },
-				// },
-				// {
-				// 	id: 'settings-sso',
-				// 	icon: 'user-lock',
-				// 	label: this.$locale.baseText('settings.sso'),
-				// 	position: 'top',
-				// 	available: this.canAccessSso(),
-				// 	route: { to: { name: VIEWS.SSO_SETTINGS } },
-				// },
-				// {
-				// 	id: 'settings-ldap',
-				// 	icon: 'network-wired',
-				// 	label: this.$locale.baseText('settings.ldap'),
-				// 	position: 'top',
-				// 	available: this.canAccessLdapSettings(),
-				// 	route: { to: { name: VIEWS.LDAP_SETTINGS } },
-				// },
+				{
+					id: 'settings-source-control',
+					icon: 'code-branch',
+					label: this.$locale.baseText('settings.sourceControl.title'),
+					position: 'top',
+					available: this.canAccessSourceControl(),
+					route: { to: { name: VIEWS.SOURCE_CONTROL } },
+				},
+				{
+					id: 'settings-sso',
+					icon: 'user-lock',
+					label: this.$locale.baseText('settings.sso'),
+					position: 'top',
+					available: this.canAccessSso(),
+					route: { to: { name: VIEWS.SSO_SETTINGS } },
+				},
+				{
+					id: 'settings-ldap',
+					icon: 'network-wired',
+					label: this.$locale.baseText('settings.ldap'),
+					position: 'top',
+					available: this.canAccessLdapSettings(),
+					route: { to: { name: VIEWS.LDAP_SETTINGS } },
+				},
 				{
 					id: 'settings-workersview',
 					icon: 'project-diagram',
@@ -134,15 +133,14 @@ export default defineComponent({
 				}
 			}
 
-			// EDITED HERE
-			// menuItems.push({
-			// 	id: 'settings-log-streaming',
-			// 	icon: 'sign-in-alt',
-			// 	label: this.$locale.baseText('settings.log-streaming'),
-			// 	position: 'top',
-			// 	available: this.canAccessLogStreamingSettings(),
-			// 	route: { to: { name: VIEWS.LOG_STREAMING_SETTINGS } },
-			// });
+			menuItems.push({
+				id: 'settings-log-streaming',
+				icon: 'sign-in-alt',
+				label: this.$locale.baseText('settings.log-streaming'),
+				position: 'top',
+				available: this.canAccessLogStreamingSettings(),
+				route: { to: { name: VIEWS.LOG_STREAMING_SETTINGS } },
+			});
 
 			menuItems.push({
 				id: 'settings-community-nodes',

@@ -15,7 +15,7 @@ export const useSourceControlStore = defineStore('sourceControl', () => {
 		() =>
 			// EDITED HERE
 			// settingsStore.isEnterpriseFeatureEnabled(EnterpriseEditionFeature.SourceControl),
-			false,
+			true,
 	);
 
 	const sshKeyTypes: SshKeyTypes = ['ed25519', 'rsa'];
