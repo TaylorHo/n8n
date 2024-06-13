@@ -280,7 +280,8 @@ export class FrontendService {
 			variables: this.license.isVariablesEnabled(),
 			sourceControl: this.license.isSourceControlLicensed(),
 			externalSecrets: this.license.isExternalSecretsEnabled(),
-			showNonProdBanner: this.license.isFeatureEnabled(LICENSE_FEATURES.SHOW_NON_PROD_BANNER),
+			// EDITED HERE
+			showNonProdBanner: false,
 			debugInEditor: this.license.isDebugInEditorLicensed(),
 			binaryDataS3: isS3Available && isS3Selected && isS3Licensed,
 			workflowHistory:
