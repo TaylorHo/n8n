@@ -1,6 +1,7 @@
 import { createComponentRenderer } from '@/__tests__/render';
 import ProjectTabs from '@/components/Projects/ProjectTabs.vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
+import { createTestProject } from '@/__tests__/data/projects';
 import { useProjectsStore } from '@/stores/projects.store';
 
 vi.mock('vue-router', () => {
@@ -33,15 +34,11 @@ vi.mock('@/utils/rbac/permissions', () => ({
 
 const renderComponent = createComponentRenderer(ProjectTabs);
 
-let router: ReturnType<typeof useRouter>;
 let route: ReturnType<typeof useRoute>;
-let projectsStore: ReturnType<typeof useProjectsStore>;
 
 describe('ProjectTabs', () => {
 	beforeEach(() => {
 		route = useRoute();
-		router = useRouter();
-		projectsStore = useProjectsStore();
 	});
 
 	it('should render home tabs', async () => {
@@ -54,15 +51,14 @@ describe('ProjectTabs', () => {
 
 	it('should render project tabs if use has permissions', () => {
 		route.params.projectId = '123';
-		projectsStore.currentProject = {
-			id: '123',
-			type: 'team',
-			name: 'Project',
-			relations: [],
-			scopes: ['project:update'],
-			createdAt: '',
-			updatedAt: '',
-		};
+		vi.mocked(useProjectsStore).mockImplementationOnce(
+			() =>
+				({
+					currentProject: createTestProject({
+						scopes: ['project:update'],
+					}),
+				}) as ReturnType<typeof useProjectsStore>,
+		);
 		const { getByText } = renderComponent();
 
 		expect(getByText('Workflows')).toBeInTheDocument();
@@ -72,15 +68,14 @@ describe('ProjectTabs', () => {
 
 	it('should render project tabs', () => {
 		route.params.projectId = '123';
-		projectsStore.currentProject = {
-			id: '123',
-			type: 'team',
-			name: 'Project',
-			relations: [],
-			scopes: ['project:read'],
-			createdAt: '',
-			updatedAt: '',
-		};
+		vi.mocked(useProjectsStore).mockImplementationOnce(
+			() =>
+				({
+					currentProject: createTestProject({
+						scopes: ['project:read'],
+					}),
+				}) as ReturnType<typeof useProjectsStore>,
+		);
 		const { queryByText, getByText } = renderComponent();
 
 		expect(getByText('Workflows')).toBeInTheDocument();
