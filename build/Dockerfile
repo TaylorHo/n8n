@@ -30,8 +30,6 @@ USER root
 
 RUN rm -rf /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
 COPY --from=builder /n8n/packages/editor-ui/dist /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
-# RUN rm -rf /usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist
-# COPY --from=builder /n8n/packages/nodes-base/dist /usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist
 COPY --from=builder /n8n/packages/cli/dist/License.js /usr/local/lib/node_modules/n8n/dist/License.js
 
 RUN set -eux; \
