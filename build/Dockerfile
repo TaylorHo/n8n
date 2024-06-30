@@ -1,4 +1,4 @@
-FROM node:20-alpine3.20@sha256:66c7d989b6dabba6b4305b88f40912679aebd9f387a5b16ffa76dfb9ae90b060 AS builder
+FROM node:20-alpine3.20@sha256:df01469346db2bf1cfc1f7261aeab86b2960efa840fe2bd46d83ff339f463665 AS builder
 WORKDIR /
 
 RUN apk add --update --no-cache git
@@ -8,15 +8,24 @@ RUN npm i -g pnpm
 WORKDIR /n8n/
 COPY ./assets/favicon.ico ./packages/editor-ui/public/favicon.ico
 RUN pnpm install
-RUN sed -i 's/n8n - Workflow Automation/Automação/g' ./packages/editor-ui/src/composables/useTitleChange.ts
-RUN sed -i 's/n8n.io - Workflow Automation/Automação/g' ./packages/editor-ui/index.html
-RUN sed -i 's/ea4b71/a259ff/gI' ./packages/editor-ui/public/static/**/*.svg
+RUN sed -i'' -e 's/n8n - Workflow Automation/Automação/g' ./packages/editor-ui/src/composables/useTitleChange.ts
+RUN sed -i'' -e 's/n8n.io - Workflow Automation/Automação/g' ./packages/editor-ui/index.html
+RUN sed -i'' -e 's/ea4b71/a259ff/gI' ./packages/editor-ui/public/static/**/*.svg
 RUN pnpm build
 
-# Changing primary color (just the sed with -i wasn't working, so using it with some more steps below)
-RUN sed -i 's#--prim-color-primary-h: 7;#--prim-color-primary-h: 266;#g' ./packages/editor-ui/dist/assets/index-*.css
+######## Comment
+# if the `sed -i'' -e` doesn't work on Debian, we can try to use the above syntax:
+# RUN if [[ "$OSTYPE" == "darwin"* ]]; then \
+#     sed -i '' 's/n8n - Workflow Automation/Automação/g' ./packages/editor-ui/src/composables/useTitleChange.ts; \
+#   else \
+#     sed -i 's/n8n - Workflow Automation/Automação/g' ./packages/editor-ui/src/composables/useTitleChange.ts; \
+#   fi
+################
 
-FROM n8nio/n8n:1.45.0@sha256:fb606729c480fa19d88d38842e3d956d6ab8025330f619aa672414a868a4415d AS main
+# Changing primary color (just the sed with -i wasn't working, so using it with some more steps below)
+RUN sed -i'' -e 's#--prim-color-primary-h: 7;#--prim-color-primary-h: 266;#g' ./packages/editor-ui/dist/assets/index-*.css
+
+FROM n8nio/n8n:1.48.0@sha256:07a6e087d480c845099b172f2320bb813e1b2664ee054d8df28ec58114ca42f0 AS main
 USER root
 
 RUN rm -rf /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
@@ -57,10 +66,10 @@ RUN set -eux; \
   find /usr/local -type d -name '.git' -exec rm -rf {} + && \
   find /usr/local -type d -name '.husky' -exec rm -rf {} + && \
   find /usr/local -type d -name '.turbo' -exec rm -rf {} + && \
-  find /usr/local -type f -name '*.js' -exec sed -i 's#//\# sourceMappingURL=.*\.map##g' {} + && \
+  find /usr/local -type f -name '*.js' -exec sed -i'' -e 's#//\# sourceMappingURL=.*\.map##g' {} + && \
   find /usr/local -type f -name '*.css' ! -name '*min.css' -exec sh -c 'uglifycss "$1" > "$1.min" && mv "$1.min" "$1"' _ {} \;
 
-FROM node:20-alpine3.20@sha256:66c7d989b6dabba6b4305b88f40912679aebd9f387a5b16ffa76dfb9ae90b060
+FROM node:20-alpine3.20@sha256:df01469346db2bf1cfc1f7261aeab86b2960efa840fe2bd46d83ff339f463665
 COPY --from=main /usr/local/lib/node_modules/n8n /usr/local/lib/node_modules/n8n
 
 ## Performance related environment variables
@@ -82,6 +91,7 @@ ENV DB_TYPE=sqlite
 ENV DB_SQLITE_VACUUM_ON_STARTUP=true
 ENV WORKFLOWS_DEFAULT_NAME="Automação"
 ENV N8N_HIDE_USAGE_PAGE=true
+ENV N8N_DEFAULT_LOCALE="pt-BR"
 
 WORKDIR /home/node
 RUN \
