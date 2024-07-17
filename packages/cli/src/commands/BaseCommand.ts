@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { Container } from 'typedi';
 import { Command, Errors } from '@oclif/core';
+import { GlobalConfig } from '@n8n/config';
 import { ApplicationError, ErrorReporterProxy as ErrorReporter, sleep } from 'n8n-workflow';
 import { BinaryDataService, InstanceSettings, ObjectStoreService } from 'n8n-core';
 import type { AbstractServer } from '@/AbstractServer';
@@ -22,6 +23,7 @@ import { initExpressionEvaluator } from '@/ExpressionEvaluator';
 import { generateHostInstanceId } from '@db/utils/generators';
 import { WorkflowHistoryManager } from '@/workflows/workflowHistory/workflowHistoryManager.ee';
 import { ShutdownService } from '@/shutdown/Shutdown.service';
+import { TelemetryEventRelay } from '@/telemetry/telemetry-event-relay.service';
 
 export abstract class BaseCommand extends Command {
 	protected logger = Container.get(Logger);
@@ -77,7 +79,8 @@ export abstract class BaseCommand extends Command {
 				await this.exitWithCrash('There was an error running database migrations', error),
 		);
 
-		const dbType = config.getEnv('database.type');
+		const globalConfig = Container.get(GlobalConfig);
+		const { type: dbType } = globalConfig.database;
 
 		if (['mysqldb', 'mariadb'].includes(dbType)) {
 			this.logger.warn(
@@ -109,6 +112,7 @@ export abstract class BaseCommand extends Command {
 
 		await Container.get(PostHogClient).init();
 		await Container.get(InternalHooks).init();
+		await Container.get(TelemetryEventRelay).init();
 	}
 
 	protected setInstanceType(instanceType: N8nInstanceType) {

@@ -16,8 +16,8 @@ import type {
 } from 'n8n-workflow';
 import {
 	ErrorReporterProxy as ErrorReporter,
+	ExecutionCancelledError,
 	Workflow,
-	WorkflowOperationError,
 } from 'n8n-workflow';
 
 import PCancelable from 'p-cancelable';
@@ -146,7 +146,7 @@ export class WorkflowRunner {
 			// frontend would not be possible
 			await this.enqueueExecution(executionId, data, loadStaticData, realtime);
 		} else {
-			await this.runMainProcess(executionId, data, loadStaticData, executionId);
+			await this.runMainProcess(executionId, data, loadStaticData, restartExecutionId);
 			this.eventRelay.emit('workflow-pre-execute', { executionId, data });
 		}
 
@@ -188,6 +188,7 @@ export class WorkflowRunner {
 					}
 				})
 				.catch((error) => {
+					if (error instanceof ExecutionCancelledError) return;
 					ErrorReporter.error(error);
 					this.logger.error(
 						'There was a problem running internal hook "onWorkflowPostExecute"',
@@ -273,7 +274,6 @@ export class WorkflowRunner {
 				pushRef: data.pushRef,
 			});
 
-			await additionalData.hooks.executeHookFunctions('workflowExecuteBefore', []);
 			if (data.executionData !== undefined) {
 				this.logger.debug(`Execution ID ${executionId} had Execution data. Running with payload.`, {
 					executionId,
@@ -427,7 +427,7 @@ export class WorkflowRunner {
 						{ retryOf: data.retryOf ? data.retryOf.toString() : undefined },
 					);
 
-					const error = new WorkflowOperationError('Workflow-Execution has been canceled!');
+					const error = new ExecutionCancelledError(executionId);
 					await this.processError(error, new Date(), data.executionMode, executionId, hooksWorker);
 
 					reject(error);

@@ -9,6 +9,8 @@ import {
 } from 'n8n-workflow';
 import { ActiveExecutions } from '@/ActiveExecutions';
 import config from '@/config';
+import { OnShutdown } from './decorators/OnShutdown';
+import { HIGHEST_SHUTDOWN_PRIORITY } from './constants';
 
 export type JobId = Bull.JobId;
 export type Job = Bull.Job<JobData>;
@@ -32,6 +34,24 @@ export interface WebhookResponse {
 @Service()
 export class Queue {
 	private jobQueue: JobQueue;
+
+	/**
+	 * The number of jobs a single server can process concurrently
+	 * Any worker that wants to process executions must first set this to a non-zero value
+	 */
+	private concurrency = 0;
+
+	setConcurrency(concurrency: number) {
+		this.concurrency = concurrency;
+		// This sets the max event listeners on the jobQueue EventEmitter to prevent the logs getting flooded with MaxListenersExceededWarning
+		// see: https://github.com/OptimalBits/bull/blob/develop/lib/job.js#L497-L521
+		this.jobQueue.setMaxListeners(
+			4 + // `close`
+				2 + // `error`
+				2 + // `global:progress`
+				concurrency * 2, // 2 global events for every call to `job.finished()`
+		);
+	}
 
 	constructor(private activeExecutions: ActiveExecutions) {}
 
@@ -100,19 +120,18 @@ export class Queue {
 		return new Set(inProgressJobs.map((job) => job.data.executionId));
 	}
 
-	async process(concurrency: number, fn: Bull.ProcessCallbackFunction<JobData>): Promise<void> {
-		return await this.jobQueue.process(concurrency, fn);
+	async process(fn: Bull.ProcessCallbackFunction<JobData>): Promise<void> {
+		return await this.jobQueue.process(this.concurrency, fn);
 	}
 
 	async ping(): Promise<string> {
 		return await this.jobQueue.client.ping();
 	}
 
-	async pause({
-		isLocal,
-		doNotWaitActive,
-	}: { isLocal?: boolean; doNotWaitActive?: boolean } = {}): Promise<void> {
-		return await this.jobQueue.pause(isLocal, doNotWaitActive);
+	@OnShutdown(HIGHEST_SHUTDOWN_PRIORITY)
+	// Stop accepting new jobs, `doNotWaitActive` allows reporting progress
+	async pause(): Promise<void> {
+		return await this.jobQueue?.pause(true, true);
 	}
 
 	getBullObjectInstance(): JobQueue {
