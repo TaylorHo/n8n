@@ -1,4 +1,4 @@
-FROM node:20-alpine3.20@sha256:df01469346db2bf1cfc1f7261aeab86b2960efa840fe2bd46d83ff339f463665 AS builder
+FROM node:20-alpine3.20@sha256:34b7aa411056c85dbf71d240d26516949b3f72b318d796c26b57caaa1df5639a AS builder
 WORKDIR /
 
 RUN apk add --update --no-cache git
@@ -25,7 +25,7 @@ RUN pnpm build
 # Changing primary color (just the sed with -i wasn't working, so using it with some more steps below)
 RUN sed -i'' -e 's#--prim-color-primary-h: 7;#--prim-color-primary-h: 266;#g' ./packages/editor-ui/dist/assets/index-*.css
 
-FROM n8nio/n8n:1.48.0@sha256:07a6e087d480c845099b172f2320bb813e1b2664ee054d8df28ec58114ca42f0 AS main
+FROM n8nio/n8n:1.51.0@sha256:16105e7361102d907121f1418b51ebe65b9cb36dc0922718e855bf77280f9d1f AS main
 USER root
 
 RUN rm -rf /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
@@ -67,7 +67,7 @@ RUN set -eux; \
   find /usr/local -type f -name '*.js' -exec sed -i'' -e 's#//\# sourceMappingURL=.*\.map##g' {} + && \
   find /usr/local -type f -name '*.css' ! -name '*min.css' -exec sh -c 'uglifycss "$1" > "$1.min" && mv "$1.min" "$1"' _ {} \;
 
-FROM node:20-alpine3.20@sha256:df01469346db2bf1cfc1f7261aeab86b2960efa840fe2bd46d83ff339f463665
+FROM node:20-alpine3.20@sha256:34b7aa411056c85dbf71d240d26516949b3f72b318d796c26b57caaa1df5639a
 COPY --from=main /usr/local/lib/node_modules/n8n /usr/local/lib/node_modules/n8n
 
 ## Performance related environment variables
