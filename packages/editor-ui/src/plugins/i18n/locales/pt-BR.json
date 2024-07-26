@@ -2605,5 +2605,18 @@
 	"dataMapping.schemaView.disabled": "Este nó está desativado e apenas passará os dados adiante",
 	"menuActions.switchToNewNodeViewVersion": "Mudar para o novo canvas",
 	"menuActions.switchToOldNodeViewVersion": "Mudar para canvas antigo",
-	"node.add": "Adicionar"
+	"node.add": "Adicionar",
+	"executionDetails.newMessage": "Execução aguardando na fila.",
+	"executionsList.new": "Na fila",
+	"nodeCreator.subcategoryInfos.languageModels": "Os modelos de chat são projetados para conversas interativas e seguem bem as instruções, enquanto os modelos de conclusão de texto se concentram em gerar continuações de uma entrada de texto fornecida",
+	"nodeCreator.subcategoryInfos.memory": "A memória permite que um modelo de IA lembre e faça referência a interações passadas com ele",
+	"nodeCreator.subcategoryInfos.vectorStores": "Os armazenamentos de vetores permitem que um modelo de IA faça referência a partes relevantes de documentos, útil para responder perguntas e buscar documentos",
+	"settings.externalSecrets.card.deprecated": "obsoleto",
+	"projects.move.resource.success.title": "{resourceTypeLabel} movido com sucesso",
+	"projects.move.resource.success.message": "{resourceName} {resourceTypeLabel} foi movido para {targetProjectName} {link}",
+	"projects.move.resource.success.link": "Ver {targetProjectName}",
+	"projects.badge.tooltip.sharedOwned": "Este {resourceTypeLabel} é de sua propriedade e compartilhado com um ou mais outros usuários",
+	"projects.badge.tooltip.sharedPersonal": "Este {resourceTypeLabel} é de propriedade de {name} e compartilhado com um ou mais outros usuários",
+	"projects.badge.tooltip.personal": "Este {resourceTypeLabel} é de propriedade de {name}",
+	"projects.badge.tooltip.team": "Este {resourceTypeLabel} é de propriedade do projeto {name}. Todos os usuários deste projeto têm acesso a ele."
 }
