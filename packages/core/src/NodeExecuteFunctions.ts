@@ -2755,6 +2755,12 @@ async function getInputConnectionData(
 
 	const parentNodes = workflow.getParentNodes(node.name, inputName, 1);
 	if (parentNodes.length === 0) {
+		if (inputConfiguration.required) {
+			throw new NodeOperationError(
+				node,
+				`A ${inputConfiguration?.displayName ?? inputName} sub-node must be connected`,
+			);
+		}
 		return inputConfiguration.maxConnections === 1 ? undefined : [];
 	}
 
@@ -2888,7 +2894,10 @@ async function getInputConnectionData(
 	const nodes = await Promise.all(constParentNodes);
 
 	if (inputConfiguration.required && nodes.length === 0) {
-		throw new NodeOperationError(node, `A ${inputName} processor node must be connected`);
+		throw new NodeOperationError(
+			node,
+			`A ${inputConfiguration?.displayName ?? inputName} sub-node must be connected`,
+		);
 	}
 	if (
 		inputConfiguration.maxConnections !== undefined &&
@@ -2896,7 +2905,7 @@ async function getInputConnectionData(
 	) {
 		throw new NodeOperationError(
 			node,
-			`Only ${inputConfiguration.maxConnections} ${inputName} processor nodes are/is allowed to be connected`,
+			`Only ${inputConfiguration.maxConnections} ${inputName} sub-nodes are/is allowed to be connected`,
 		);
 	}
 
@@ -3159,10 +3168,16 @@ const getRequestHelperFunctions = (
 				additionalKeys.$response = newResponse;
 				additionalKeys.$pageCount = additionalKeys.$pageCount + 1;
 
-				if (
-					paginationOptions.maxRequests &&
-					additionalKeys.$pageCount >= paginationOptions.maxRequests
-				) {
+				const maxRequests = getResolvedValue(
+					paginationOptions.maxRequests,
+					itemIndex,
+					runIndex,
+					executeData,
+					additionalKeys,
+					false,
+				) as number;
+
+				if (maxRequests && additionalKeys.$pageCount >= maxRequests) {
 					break;
 				}
 
@@ -3177,7 +3192,16 @@ const getRequestHelperFunctions = (
 
 				if (makeAdditionalRequest) {
 					if (paginationOptions.requestInterval) {
-						await sleep(paginationOptions.requestInterval);
+						const requestInterval = getResolvedValue(
+							paginationOptions.requestInterval,
+							itemIndex,
+							runIndex,
+							executeData,
+							additionalKeys,
+							false,
+						) as number;
+
+						await sleep(requestInterval);
 					}
 					if (tempResponseData.statusCode < 200 || tempResponseData.statusCode >= 300) {
 						// We have it configured to let all requests pass no matter the response code

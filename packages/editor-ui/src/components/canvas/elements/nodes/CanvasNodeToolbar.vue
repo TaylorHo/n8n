@@ -8,6 +8,11 @@ const emit = defineEmits<{
 	delete: [];
 	toggle: [];
 	run: [];
+	'open:contextmenu': [event: MouseEvent];
+}>();
+
+const props = defineProps<{
+	readOnly?: boolean;
 }>();
 
 const $style = useCssModule();
@@ -21,8 +26,14 @@ const workflowRunning = false;
 // @TODO
 const nodeDisabledTitle = 'Test';
 
+const classes = computed(() => ({
+	[$style.canvasNodeToolbar]: true,
+	[$style.readOnly]: props.readOnly,
+}));
+
 const isExecuteNodeVisible = computed(() => {
 	return (
+		!props.readOnly &&
 		render.value.type === CanvasNodeRenderType.Default &&
 		'configuration' in render.value.options &&
 		!render.value.options.configuration
@@ -30,8 +41,10 @@ const isExecuteNodeVisible = computed(() => {
 });
 
 const isDisableNodeVisible = computed(() => {
-	return render.value.type === CanvasNodeRenderType.Default;
+	return !props.readOnly && render.value.type === CanvasNodeRenderType.Default;
 });
+
+const isDeleteNodeVisible = computed(() => !props.readOnly);
 
 function executeNode() {
 	emit('run');
@@ -45,12 +58,13 @@ function onDeleteNode() {
 	emit('delete');
 }
 
-// @TODO
-function openContextMenu(_e: MouseEvent, _type: string) {}
+function onOpenContextMenu(event: MouseEvent) {
+	emit('open:contextmenu', event);
+}
 </script>
 
 <template>
-	<div :class="$style.canvasNodeToolbar">
+	<div :class="classes">
 		<div :class="$style.canvasNodeToolbarItems">
 			<N8nIconButton
 				v-if="isExecuteNodeVisible"
@@ -74,6 +88,7 @@ function openContextMenu(_e: MouseEvent, _type: string) {}
 				@click="onToggleNode"
 			/>
 			<N8nIconButton
+				v-if="isDeleteNodeVisible"
 				data-test-id="delete-node-button"
 				type="tertiary"
 				size="small"
@@ -88,7 +103,7 @@ function openContextMenu(_e: MouseEvent, _type: string) {}
 				size="small"
 				text
 				icon="ellipsis-h"
-				@click="(e: MouseEvent) => openContextMenu(e, 'node-button')"
+				@click="onOpenContextMenu"
 			/>
 		</div>
 	</div>
@@ -97,6 +112,9 @@ function openContextMenu(_e: MouseEvent, _type: string) {}
 <style lang="scss" module>
 .canvasNodeToolbar {
 	padding-bottom: var(--spacing-2xs);
+	display: flex;
+	justify-content: flex-end;
+	width: 100%;
 }
 
 .canvasNodeToolbarItems {

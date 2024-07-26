@@ -12,10 +12,7 @@ export const useSourceControlStore = defineStore('sourceControl', () => {
 	const settingsStore = useSettingsStore();
 
 	const isEnterpriseSourceControlEnabled = computed(
-		() =>
-			// EDITED HERE
-			// settingsStore.isEnterpriseFeatureEnabled(EnterpriseEditionFeature.SourceControl),
-			true,
+		() => settingsStore.isEnterpriseFeatureEnabled[EnterpriseEditionFeature.SourceControl],
 	);
 
 	const sshKeyTypes: SshKeyTypes = ['ed25519', 'rsa'];
@@ -72,10 +69,10 @@ export const useSourceControlStore = defineStore('sourceControl', () => {
 
 	const makePreferencesAction =
 		(action: typeof vcApi.savePreferences) =>
-		async (preferences: Partial<SourceControlPreferences>) => {
-			const data = await action(rootStore.restApiContext, preferences);
-			setPreferences(data);
-		};
+			async (preferences: Partial<SourceControlPreferences>) => {
+				const data = await action(rootStore.restApiContext, preferences);
+				setPreferences(data);
+			};
 
 	const getBranches = async () => {
 		const data = await vcApi.getBranches(rootStore.restApiContext);

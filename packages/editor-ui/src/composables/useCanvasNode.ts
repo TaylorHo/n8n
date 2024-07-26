@@ -6,7 +6,7 @@
 import { CanvasNodeKey } from '@/constants';
 import { computed, inject } from 'vue';
 import type { CanvasNodeData } from '@/types';
-import { CanvasNodeRenderType } from '@/types';
+import { CanvasNodeRenderType, CanvasConnectionMode } from '@/types';
 
 export function useCanvasNode() {
 	const node = inject(CanvasNodeKey);
@@ -15,12 +15,13 @@ export function useCanvasNode() {
 			node?.data.value ?? {
 				id: '',
 				name: '',
+				subtitle: '',
 				type: '',
 				typeVersion: 1,
 				disabled: false,
 				inputs: [],
 				outputs: [],
-				connections: { input: {}, output: {} },
+				connections: { [CanvasConnectionMode.Input]: {}, [CanvasConnectionMode.Output]: {} },
 				issues: { items: [], visible: false },
 				pinnedData: { count: 0, visible: false },
 				execution: {
@@ -37,6 +38,7 @@ export function useCanvasNode() {
 	const id = computed(() => node?.id.value ?? '');
 	const label = computed(() => node?.label.value ?? '');
 
+	const subtitle = computed(() => data.value.subtitle);
 	const name = computed(() => data.value.name);
 	const inputs = computed(() => data.value.inputs);
 	const outputs = computed(() => data.value.outputs);
@@ -66,6 +68,7 @@ export function useCanvasNode() {
 		id,
 		name,
 		label,
+		subtitle,
 		inputs,
 		outputs,
 		connections,
