@@ -25,7 +25,7 @@ RUN pnpm build
 # Changing primary color (just the sed with -i wasn't working, so using it with some more steps below)
 RUN sed -i'' -e 's#--prim-color-primary-h: 7;#--prim-color-primary-h: 266;#g' ./packages/editor-ui/dist/assets/index-*.css
 
-FROM n8nio/n8n:1.51.0@sha256:16105e7361102d907121f1418b51ebe65b9cb36dc0922718e855bf77280f9d1f AS main
+FROM n8nio/n8n:1.52.1@sha256:647744637bcaf06397d92a6dc830f7533e2ed39e450d54cf9b7fb50d31c75fd4 AS main
 USER root
 
 RUN rm -rf /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
