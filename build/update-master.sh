@@ -14,6 +14,5 @@ git checkout master -q
 git merge upstream/master -q
 
 rm -rf ../.github/
-git add ../
 
 echo "READY: Resolve conflicts on Code Editor."

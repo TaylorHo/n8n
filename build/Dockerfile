@@ -1,4 +1,4 @@
-FROM node:20-alpine3.20@sha256:34b7aa411056c85dbf71d240d26516949b3f72b318d796c26b57caaa1df5639a AS builder
+FROM node:20-alpine3.20@sha256:eb8101caae9ac02229bd64c024919fe3d4504ff7f329da79ca60a04db08cef52 AS builder
 WORKDIR /
 
 RUN apk add --update --no-cache git
@@ -67,7 +67,7 @@ RUN set -eux; \
   find /usr/local -type f -name '*.js' -exec sed -i'' -e 's#//\# sourceMappingURL=.*\.map##g' {} + && \
   find /usr/local -type f -name '*.css' ! -name '*min.css' -exec sh -c 'uglifycss "$1" > "$1.min" && mv "$1.min" "$1"' _ {} \;
 
-FROM node:20-alpine3.20@sha256:34b7aa411056c85dbf71d240d26516949b3f72b318d796c26b57caaa1df5639a
+FROM node:20-alpine3.20@sha256:eb8101caae9ac02229bd64c024919fe3d4504ff7f329da79ca60a04db08cef52
 COPY --from=main /usr/local/lib/node_modules/n8n /usr/local/lib/node_modules/n8n
 
 ## Performance related environment variables
