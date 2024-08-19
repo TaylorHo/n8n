@@ -9,7 +9,7 @@ import type {
 	INodeTypeBaseDescription,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { NodeConnectionType, NodeOperationError } from 'n8n-workflow';
+import { ApplicationError, NodeConnectionType, NodeOperationError } from 'n8n-workflow';
 import set from 'lodash/set';
 import { capitalize } from '@utils/utilities';
 import { ENABLE_LESS_STRICT_TYPE_VALIDATION } from '../../../utils/constants';
@@ -188,7 +188,7 @@ export class SwitchV3 implements INodeType {
 					displayName: 'Options',
 					name: 'options',
 					type: 'collection',
-					placeholder: 'Add Option',
+					placeholder: 'Add option',
 					default: {},
 					displayOptions: {
 						show: {
@@ -382,7 +382,18 @@ export class SwitchV3 implements INodeType {
 					returnData[0].push({ json: { error: error.message } });
 					continue;
 				}
-				throw new NodeOperationError(this.getNode(), error);
+				if (error instanceof NodeOperationError) {
+					throw error;
+				}
+
+				if (error instanceof ApplicationError) {
+					set(error, 'context.itemIndex', itemIndex);
+					throw error;
+				}
+
+				throw new NodeOperationError(this.getNode(), error, {
+					itemIndex,
+				});
 			}
 		}
 
