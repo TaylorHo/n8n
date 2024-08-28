@@ -18,6 +18,7 @@ services:
           cpus: '0.10'
           memory: 128M
 
+  # Caddy can be used to reverse-proxy the n8n with HTTPS in a server. Remember to open only the 443 port in the server (and avoid opening the 5678)
   # caddy:
   #   image: caddy:2.8.4-alpine@sha256:a48e22edad925dc216fd27aa4f04ec49ebdad9b64c9e5a3f1826d0595ef2993c
   #   container_name: caddy
