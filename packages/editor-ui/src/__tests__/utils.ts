@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { ISettingsState } from '@/Interface';
 import { UserManagementAuthenticationMethod } from '@/Interface';
 import { defaultSettings } from './defaults';
+import { APP_MODALS_ELEMENT_ID } from '@/constants';
 
 /**
  * Retries the given assertion until it passes or the timeout is reached
@@ -72,7 +73,7 @@ export const SETTINGS_STORE_DEFAULT_STATE: ISettingsState = {
 };
 
 export const getDropdownItems = async (dropdownTriggerParent: HTMLElement) => {
-	await userEvent.click(within(dropdownTriggerParent).getByRole('textbox'));
+	await userEvent.click(within(dropdownTriggerParent).getByRole('combobox'));
 	const selectTrigger = dropdownTriggerParent.querySelector(
 		'.select-trigger[aria-describedby]',
 	) as HTMLElement;
@@ -83,4 +84,27 @@ export const getDropdownItems = async (dropdownTriggerParent: HTMLElement) => {
 	await waitFor(() => expect(selectDropdown).toBeInTheDocument());
 
 	return selectDropdown.querySelectorAll('.el-select-dropdown__item');
+};
+
+export const getSelectedDropdownValue = async (items: NodeListOf<Element>) => {
+	const selectedItem = Array.from(items).find((item) => item.classList.contains('selected'));
+	expect(selectedItem).toBeInTheDocument();
+	return selectedItem?.querySelector('p')?.textContent?.trim();
+};
+
+/**
+ * Create a container for teleported modals
+ *
+ * More info: https://test-utils.vuejs.org/guide/advanced/teleport#Mounting-the-Component
+ * @returns {HTMLElement} appModals
+ */
+export const createAppModals = () => {
+	const appModals = document.createElement('div');
+	appModals.id = APP_MODALS_ELEMENT_ID;
+	document.body.appendChild(appModals);
+	return appModals;
+};
+
+export const cleanupAppModals = () => {
+	document.body.innerHTML = '';
 };

@@ -2,17 +2,18 @@
 import type { CanvasConnection, CanvasNode, CanvasNodeMoveEvent, ConnectStartEvent } from '@/types';
 import type {
 	EdgeMouseEvent,
-	NodeDragEvent,
 	Connection,
 	XYPosition,
 	ViewportTransform,
+	NodeChange,
+	NodePositionChange,
 } from '@vue-flow/core';
 import { useVueFlow, VueFlow, PanelPosition } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
 import { MiniMap } from '@vue-flow/minimap';
 import Node from './elements/nodes/CanvasNode.vue';
 import Edge from './elements/edges/CanvasEdge.vue';
-import { computed, onMounted, onUnmounted, ref, useCssModule, watch } from 'vue';
+import { computed, onMounted, onUnmounted, provide, ref, useCssModule, watch } from 'vue';
 import type { EventBus } from 'n8n-design-system';
 import { createEventBus } from 'n8n-design-system';
 import { useContextMenu, type ContextMenuAction } from '@/composables/useContextMenu';
@@ -22,6 +23,7 @@ import type { NodeCreatorOpenSource } from '@/Interface';
 import type { PinDataSource } from '@/composables/usePinnedData';
 import { isPresent } from '@/utils/typesUtils';
 import { GRID_SIZE } from '@/utils/nodeViewUtils';
+import { CanvasKey } from '@/constants';
 
 const $style = useCssModule();
 
@@ -48,8 +50,8 @@ const emit = defineEmits<{
 	'delete:connection': [connection: Connection];
 	'create:connection:start': [handle: ConnectStartEvent];
 	'create:connection': [connection: Connection];
-	'create:connection:end': [connection: Connection];
-	'create:connection:cancelled': [handle: ConnectStartEvent];
+	'create:connection:end': [connection: Connection, event?: MouseEvent];
+	'create:connection:cancelled': [handle: ConnectStartEvent, event?: MouseEvent];
 	'click:connection:add': [connection: Connection];
 	'click:pane': [position: XYPosition];
 	'run:workflow': [];
@@ -133,11 +135,7 @@ function onClickNodeAdd(id: string, handle: string) {
 	emit('click:node:add', id, handle);
 }
 
-function onNodeDragStop(e: NodeDragEvent) {
-	onUpdateNodesPosition(e.nodes.map((node) => ({ id: node.id, position: node.position })));
-}
-
-function onUpdateNodesPosition(events: CanvasNodeMoveEvent[]) {
+function onUpdateNodesPosition(events: NodePositionChange[]) {
 	emit('update:nodes:position', events);
 }
 
@@ -145,8 +143,14 @@ function onUpdateNodePosition(id: string, position: XYPosition) {
 	emit('update:node:position', id, position);
 }
 
-function onSelectionDragStop(e: NodeDragEvent) {
-	onNodeDragStop(e);
+function onNodesChange(events: NodeChange[]) {
+	const isPositionChangeEvent = (event: NodeChange): event is NodePositionChange =>
+		event.type === 'position' && 'position' in event;
+
+	const positionChangeEndEvents = events.filter(isPositionChangeEvent);
+	if (positionChangeEndEvents.length > 0) {
+		onUpdateNodesPosition(positionChangeEndEvents);
+	}
 }
 
 function onSetNodeActive(id: string) {
@@ -184,35 +188,32 @@ function onUpdateNodeParameters(id: string, parameters: Record<string, unknown>)
  */
 
 const connectionCreated = ref(false);
-const connectionEventData = ref<ConnectStartEvent | Connection>();
-
-const isConnection = (data: ConnectStartEvent | Connection | undefined): data is Connection =>
-	!!data && connectionCreated.value;
-
-const isConnectionCancelled = (
-	data: ConnectStartEvent | Connection | undefined,
-): data is ConnectStartEvent => !!data && !connectionCreated.value;
+const connectingHandle = ref<ConnectStartEvent>();
+const connectedHandle = ref<Connection>();
 
 function onConnectStart(handle: ConnectStartEvent) {
 	emit('create:connection:start', handle);
 
-	connectionEventData.value = handle;
+	connectingHandle.value = handle;
 	connectionCreated.value = false;
 }
 
 function onConnect(connection: Connection) {
 	emit('create:connection', connection);
 
-	connectionEventData.value = connection;
+	connectedHandle.value = connection;
 	connectionCreated.value = true;
 }
 
-function onConnectEnd() {
-	if (isConnection(connectionEventData.value)) {
-		emit('create:connection:end', connectionEventData.value);
-	} else if (isConnectionCancelled(connectionEventData.value)) {
-		emit('create:connection:cancelled', connectionEventData.value);
+function onConnectEnd(event?: MouseEvent) {
+	if (connectedHandle.value) {
+		emit('create:connection:end', connectedHandle.value, event);
+	} else if (connectingHandle.value) {
+		emit('create:connection:cancelled', connectingHandle.value, event);
 	}
+
+	connectedHandle.value = undefined;
+	connectingHandle.value = undefined;
 }
 
 function onDeleteConnection(connection: Connection) {
@@ -269,7 +270,8 @@ function emitWithLastSelectedNode(emitFn: (id: string) => void) {
  * View
  */
 
-const zoom = ref(1);
+const defaultZoom = 1;
+const zoom = ref(defaultZoom);
 
 function onClickPane(event: MouseEvent) {
 	const bounds = viewportRef.value?.getBoundingClientRect() ?? { left: 0, top: 0 };
@@ -282,7 +284,7 @@ function onClickPane(event: MouseEvent) {
 }
 
 async function onFitView() {
-	await fitView({ maxZoom: 1.2, padding: 0.2 });
+	await fitView({ maxZoom: defaultZoom, padding: 0.2 });
 }
 
 async function onZoomTo(zoomLevel: number) {
@@ -298,7 +300,7 @@ async function onZoomOut() {
 }
 
 async function onResetZoom() {
-	await onZoomTo(1);
+	await onZoomTo(defaultZoom);
 }
 
 function onViewportChange(viewport: ViewportTransform) {
@@ -392,6 +394,14 @@ onPaneReady(async () => {
 watch(() => props.readOnly, setReadonly, {
 	immediate: true,
 });
+
+/**
+ * Provide
+ */
+
+provide(CanvasKey, {
+	connectingHandle,
+});
 </script>
 
 <template>
@@ -407,8 +417,6 @@ watch(() => props.readOnly, setReadonly, {
 		:max-zoom="4"
 		:class="[$style.canvas, { [$style.visible]: paneReady }]"
 		data-test-id="canvas"
-		@node-drag-stop="onNodeDragStop"
-		@selection-drag-stop="onSelectionDragStop"
 		@edge-mouse-enter="onMouseEnterEdge"
 		@edge-mouse-leave="onMouseLeaveEdge"
 		@connect-start="onConnectStart"
@@ -417,6 +425,7 @@ watch(() => props.readOnly, setReadonly, {
 		@pane-click="onClickPane"
 		@contextmenu="onOpenContextMenu"
 		@viewport-change="onViewportChange"
+		@nodes-change="onNodesChange"
 	>
 		<template #node-canvas-node="canvasNodeProps">
 			<Node
@@ -469,7 +478,7 @@ watch(() => props.readOnly, setReadonly, {
 			:position="controlsPosition"
 			:show-interactive="false"
 			:zoom="zoom"
-			@fit-view="onFitView"
+			@zoom-to-fit="onFitView"
 			@zoom-in="onZoomIn"
 			@zoom-out="onZoomOut"
 			@reset-zoom="onResetZoom"
