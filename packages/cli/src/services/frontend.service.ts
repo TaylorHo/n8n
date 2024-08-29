@@ -179,21 +179,22 @@ export class FrontendService {
 				external: process.env.NODE_FUNCTION_ALLOW_EXTERNAL?.split(',') ?? undefined,
 			},
 			enterprise: {
-				sharing: false,
-				ldap: false,
-				saml: false,
-				logStreaming: false,
-				advancedExecutionFilters: false,
-				variables: false,
-				sourceControl: false,
-				auditLogs: false,
-				externalSecrets: false,
+				// EDITED HERE
+				sharing: true,
+				ldap: true,
+				saml: true,
+				logStreaming: true,
+				advancedExecutionFilters: true,
+				variables: true,
+				sourceControl: true,
+				auditLogs: true,
+				externalSecrets: true,
 				showNonProdBanner: false,
-				debugInEditor: false,
+				debugInEditor: true,
 				binaryDataS3: false,
-				workflowHistory: false,
-				workerView: false,
-				advancedPermissions: false,
+				workflowHistory: true,
+				workerView: true,
+				advancedPermissions: true,
 				projects: {
 					team: {
 						limit: 0,
@@ -289,48 +290,47 @@ export class FrontendService {
 
 		// refresh enterprise status
 		Object.assign(this.settings.enterprise, {
-			sharing: this.license.isSharingEnabled(),
-			logStreaming: this.license.isLogStreamingEnabled(),
-			ldap: this.license.isLdapEnabled(),
-			saml: this.license.isSamlEnabled(),
-			advancedExecutionFilters: this.license.isAdvancedExecutionFiltersEnabled(),
-			variables: this.license.isVariablesEnabled(),
-			sourceControl: this.license.isSourceControlLicensed(),
-			externalSecrets: this.license.isExternalSecretsEnabled(),
 			// EDITED HERE
+			sharing: true,
+			logStreaming: true,
+			ldap: true,
+			saml: true,
+			advancedExecutionFilters: true,
+			variables: true,
+			sourceControl: true,
+			externalSecrets: true,
 			showNonProdBanner: false,
-			debugInEditor: this.license.isDebugInEditorLicensed(),
+			debugInEditor: true,
 			binaryDataS3: isS3Available && isS3Selected && isS3Licensed,
-			workflowHistory:
-				this.license.isWorkflowHistoryLicensed() && config.getEnv('workflowHistory.enabled'),
-			workerView: this.license.isWorkerViewLicensed(),
-			advancedPermissions: this.license.isAdvancedPermissionsLicensed(),
+			workflowHistory: true,
+			workerView: true,
+			advancedPermissions: true,
 		});
 
-		if (this.license.isLdapEnabled()) {
-			Object.assign(this.settings.sso.ldap, {
-				loginLabel: getLdapLoginLabel(),
-				loginEnabled: config.getEnv('sso.ldap.loginEnabled'),
-			});
-		}
+		// if (this.license.isLdapEnabled()) {
+		Object.assign(this.settings.sso.ldap, {
+			loginLabel: getLdapLoginLabel(),
+			loginEnabled: config.getEnv('sso.ldap.loginEnabled'),
+		});
+		// }
 
-		if (this.license.isSamlEnabled()) {
-			Object.assign(this.settings.sso.saml, {
-				loginLabel: getSamlLoginLabel(),
-				loginEnabled: config.getEnv('sso.saml.loginEnabled'),
-			});
-		}
+		// if (this.license.isSamlEnabled()) {
+		Object.assign(this.settings.sso.saml, {
+			loginLabel: getSamlLoginLabel(),
+			loginEnabled: config.getEnv('sso.saml.loginEnabled'),
+		});
+		// }
 
-		if (this.license.isVariablesEnabled()) {
-			this.settings.variables.limit = getVariablesLimit();
-		}
+		// if (this.license.isVariablesEnabled()) {
+		this.settings.variables.limit = getVariablesLimit();
+		// }
 
-		if (this.license.isWorkflowHistoryLicensed() && config.getEnv('workflowHistory.enabled')) {
-			Object.assign(this.settings.workflowHistory, {
-				pruneTime: getWorkflowHistoryPruneTime(),
-				licensePruneTime: getWorkflowHistoryLicensePruneTime(),
-			});
-		}
+		// if (this.license.isWorkflowHistoryLicensed() && config.getEnv('workflowHistory.enabled')) {
+		Object.assign(this.settings.workflowHistory, {
+			pruneTime: getWorkflowHistoryPruneTime(),
+			licensePruneTime: getWorkflowHistoryLicensePruneTime(),
+		});
+		// }
 
 		if (this.communityPackagesService) {
 			this.settings.missingPackages = this.communityPackagesService.hasMissingPackages;

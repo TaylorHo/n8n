@@ -30,7 +30,7 @@ USER root
 
 RUN rm -rf /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
 COPY --from=builder /n8n/packages/editor-ui/dist /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
-COPY --from=builder /n8n/packages/cli/dist/License.js /usr/local/lib/node_modules/n8n/dist/License.js
+COPY --from=builder /n8n/packages/cli/dist/license.js /usr/local/lib/node_modules/n8n/dist/license.js
 
 RUN set -eux; \
   npm i -g uglifycss && \
