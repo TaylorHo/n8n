@@ -13,15 +13,6 @@ RUN sed -i'' -e 's/n8n.io - Workflow Automation/Automação/g' ./packages/editor
 RUN sed -i'' -e 's/ea4b71/a259ff/gI' ./packages/editor-ui/public/static/**/*.svg
 RUN pnpm build
 
-######## Comment
-# if the `sed -i'' -e` doesn't work on Debian, we can try to use the above syntax:
-# RUN if [[ "$OSTYPE" == "darwin"* ]]; then \
-#     sed -i '' 's/n8n - Workflow Automation/Automação/g' ./packages/editor-ui/src/composables/useTitleChange.ts; \
-#   else \
-#     sed -i 's/n8n - Workflow Automation/Automação/g' ./packages/editor-ui/src/composables/useTitleChange.ts; \
-#   fi
-################
-
 # Changing primary color (just the sed with -i wasn't working, so using it with some more steps below)
 RUN sed -i'' -e 's#--prim-color-primary-h: 7;#--prim-color-primary-h: 266;#g' ./packages/editor-ui/dist/assets/index-*.css
 
