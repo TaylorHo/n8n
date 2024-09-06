@@ -5,7 +5,6 @@ import { mapStores } from 'pinia';
 import { useStorage } from '@/composables/useStorage';
 import { saveAs } from 'file-saver';
 import type {
-	ConnectionTypes,
 	IBinaryData,
 	IBinaryKeyData,
 	IDataObject,
@@ -63,6 +62,7 @@ import { useExternalHooks } from '@/composables/useExternalHooks';
 import { useSourceControlStore } from '@/stores/sourceControl.store';
 import { useRootStore } from '@/stores/root.store';
 import RunDataPinButton from '@/components/RunDataPinButton.vue';
+import { getGenericHints } from '@/utils/nodeViewUtils';
 
 const LazyRunDataTable = defineAsyncComponent(
 	async () => await import('@/components/RunDataTable.vue'),
@@ -181,7 +181,7 @@ export default defineComponent({
 	},
 	data() {
 		return {
-			connectionType: NodeConnectionType.Main as ConnectionTypes,
+			connectionType: NodeConnectionType.Main as NodeConnectionType,
 			binaryDataPreviewActive: false,
 			dataSize: 0,
 			showData: false,
@@ -517,6 +517,10 @@ export default defineComponent({
 
 			return parentNodeData;
 		},
+		parentNodePinnedData(): INodeExecutionData[] {
+			const parentNode = this.workflow.getParentNodesByDepth(this.node?.name ?? '')[0];
+			return this.workflow.pinData?.[parentNode?.name || ''] || [];
+		},
 	},
 	watch: {
 		node(newNode: INodeUi, prevNode: INodeUi) {
@@ -641,20 +645,44 @@ export default defineComponent({
 			return true;
 		},
 		getNodeHints(): NodeHint[] {
-			if (this.node && this.nodeType) {
-				const workflowNode = this.workflow.getNode(this.node.name);
+			try {
+				if (this.node && this.nodeType) {
+					const workflowNode = this.workflow.getNode(this.node.name);
 
-				if (workflowNode) {
-					const executionHints = this.executionHints;
-					const nodeHints = NodeHelpers.getNodeHints(this.workflow, workflowNode, this.nodeType, {
-						runExecutionData: this.workflowExecution?.data ?? null,
-						runIndex: this.runIndex,
-						connectionInputData: this.parentNodeOutputData,
-					});
+					if (workflowNode) {
+						const executionHints = this.executionHints;
 
-					return executionHints.concat(nodeHints).filter(this.shouldHintBeDisplayed);
+						const nodeHints = NodeHelpers.getNodeHints(this.workflow, workflowNode, this.nodeType, {
+							runExecutionData: this.workflowExecution?.data ?? null,
+							runIndex: this.runIndex,
+							connectionInputData: this.parentNodeOutputData,
+						});
+
+						const hasMultipleInputItems =
+							this.parentNodeOutputData.length > 1 || this.parentNodePinnedData.length > 1;
+
+						const nodeOutputData =
+							this.workflowRunData?.[this.node.name]?.[this.runIndex]?.data?.main?.[0] || [];
+
+						const genericHints = getGenericHints({
+							workflowNode,
+							node: this.node,
+							nodeType: this.nodeType,
+							nodeOutputData,
+							workflow: this.workflow,
+							hasNodeRun: this.hasNodeRun,
+							hasMultipleInputItems,
+						});
+
+						return executionHints
+							.concat(nodeHints, genericHints)
+							.filter(this.shouldHintBeDisplayed);
+					}
 				}
+			} catch (error) {
+				console.error('Error while getting node hints', error);
 			}
+
 			return [];
 		},
 		onItemHover(itemIndex: number | null) {
@@ -929,7 +957,7 @@ export default defineComponent({
 		getRawInputData(
 			runIndex: number,
 			outputIndex: number,
-			connectionType: ConnectionTypes = NodeConnectionType.Main,
+			connectionType: NodeConnectionType = NodeConnectionType.Main,
 		): INodeExecutionData[] {
 			let inputData: INodeExecutionData[] = [];
 
@@ -974,7 +1002,7 @@ export default defineComponent({
 		getDataCount(
 			runIndex: number,
 			outputIndex: number,
-			connectionType: ConnectionTypes = NodeConnectionType.Main,
+			connectionType: NodeConnectionType = NodeConnectionType.Main,
 		) {
 			if (!this.node) {
 				return 0;
@@ -993,7 +1021,7 @@ export default defineComponent({
 			this.outputIndex = 0;
 			this.refreshDataSize();
 			this.closeBinaryDataDisplay();
-			let outputTypes: ConnectionTypes[] = [];
+			let outputTypes: NodeConnectionType[] = [];
 			if (this.nodeType !== null && this.node !== null) {
 				const outputs = this.getResolvedNodeOutputs();
 				outputTypes = NodeHelpers.getConnectionTypes(outputs);

@@ -62,6 +62,7 @@ const getSqliteConnectionOptions = (): SqliteConnectionOptions | SqlitePooledCon
 		database: path.resolve(Container.get(InstanceSettings).n8nFolder, sqliteConfig.database),
 		migrations: sqliteMigrations,
 	};
+
 	if (sqliteConfig.poolSize > 0) {
 		return {
 			type: 'sqlite-pooled',
@@ -103,6 +104,7 @@ const getPostgresConnectionOptions = (): PostgresConnectionOptions => {
 		schema: postgresConfig.schema,
 		poolSize: postgresConfig.poolSize,
 		migrations: postgresMigrations,
+		connectTimeoutMS: postgresConfig.connectionTimeoutMs,
 		ssl,
 	};
 };

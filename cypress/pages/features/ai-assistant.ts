@@ -26,7 +26,8 @@ export class AIAssistant extends BasePage {
 		chatMessagesAssistant: () => cy.getByTestId('chat-message-assistant'),
 		chatMessagesUser: () => cy.getByTestId('chat-message-user'),
 		chatMessagesSystem: () => cy.getByTestId('chat-message-system'),
-		quickReplies: () => cy.getByTestId('quick-replies').find('button'),
+		quickReplies: () => cy.getByTestId('quick-replies'),
+		quickReplyButtons: () => this.getters.quickReplies().find('button'),
 		newAssistantSessionModal: () => cy.getByTestId('new-assistant-session-modal'),
 		codeDiffs: () => cy.getByTestId('code-diff-suggestion'),
 		applyCodeDiffButtons: () => cy.getByTestId('replace-code-button'),
@@ -37,13 +38,24 @@ export class AIAssistant extends BasePage {
 	};
 
 	actions = {
-		enableAssistant(): void {
+		enableAssistant: () => {
 			overrideFeatureFlag(AI_ASSISTANT_FEATURE.experimentName, AI_ASSISTANT_FEATURE.enabledFor);
 			cy.enableFeature(AI_ASSISTANT_FEATURE.name);
 		},
-		disableAssistant(): void {
+		disableAssistant: () => {
 			overrideFeatureFlag(AI_ASSISTANT_FEATURE.experimentName, AI_ASSISTANT_FEATURE.disabledFor);
 			cy.disableFeature(AI_ASSISTANT_FEATURE.name);
+		},
+		sendMessage: (message: string) => {
+			this.getters.chatInput().type(message).type('{enter}');
+		},
+		closeChat: () => {
+			this.getters.closeChatButton().click();
+			this.getters.askAssistantChat().should('not.be.visible');
+		},
+		openChat: () => {
+			this.getters.askAssistantFloatingButton().click();
+			this.getters.askAssistantChat().should('be.visible');
 		},
 	};
 }

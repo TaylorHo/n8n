@@ -44,9 +44,16 @@ function prefix(pathSegment: string) {
 }
 
 const browserId = 'test-browser-id';
-function createAgent(app: express.Application, options?: { auth: boolean; user: User }) {
+function createAgent(
+	app: express.Application,
+	options?: { auth: boolean; user?: User; noRest?: boolean },
+) {
 	const agent = request.agent(app);
-	void agent.use(prefix(REST_PATH_SEGMENT));
+
+	const withRestSegment = !options?.noRest;
+
+	if (withRestSegment) void agent.use(prefix(REST_PATH_SEGMENT));
+
 	if (options?.auth && options?.user) {
 		const token = Container.get(AuthService).issueJWT(options.user, browserId);
 		agent.jar.setCookie(`${AUTH_COOKIE_NAME}=${token}`);
@@ -89,6 +96,7 @@ export const setupTestServer = ({
 		httpServer: app.listen(0),
 		authAgentFor: (user: User) => createAgent(app, { auth: true, user }),
 		authlessAgent: createAgent(app),
+		restlessAgent: createAgent(app, { auth: false, noRest: true }),
 		publicApiAgentFor: (user) => publicApiAgent(app, { user }),
 		license: new LicenseMocker(),
 	};
@@ -119,9 +127,20 @@ export const setupTestServer = ({
 			app.use(...apiRouters);
 		}
 
+		if (endpointGroups?.includes('health')) {
+			app.get('/healthz/readiness', async (_req, res) => {
+				testDb.isReady()
+					? res.status(200).send({ status: 'ok' })
+					: res.status(503).send({ status: 'error' });
+			});
+		}
 		if (endpointGroups.length) {
 			for (const group of endpointGroups) {
 				switch (group) {
+					case 'annotationTags':
+						await import('@/controllers/annotation-tags.controller');
+						break;
+
 					case 'credentials':
 						await import('@/credentials/credentials.controller');
 						break;
