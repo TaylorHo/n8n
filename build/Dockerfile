@@ -11,6 +11,7 @@ RUN pnpm install
 RUN sed -i'' -e 's/n8n - Workflow Automation/Automação/g' ./packages/editor-ui/src/composables/useTitleChange.ts
 RUN sed -i'' -e 's/n8n.io - Workflow Automation/Automação/g' ./packages/editor-ui/index.html
 RUN sed -i'' -e 's/ea4b71/a259ff/gI' ./packages/editor-ui/public/static/**/*.svg
+RUN sed -i'' -e 's/ff6d5a/a259ff/gI' ./packages/cli/templates/*.handlebars
 RUN pnpm build
 
 # Changing primary color (just the sed with -i wasn't working, so using it with some more steps below)
@@ -22,6 +23,7 @@ USER root
 RUN rm -rf /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
 COPY --from=builder /n8n/packages/editor-ui/dist /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
 COPY --from=builder /n8n/packages/cli/dist/license.js /usr/local/lib/node_modules/n8n/dist/license.js
+COPY --from=builder /n8n/packages/cli/templates /usr/local/lib/node_modules/n8n/templates
 
 RUN set -eux; \
   npm i -g uglifycss && \

@@ -9,14 +9,6 @@ services:
       - .env
     volumes:
       - n8n_data:/home/node/.n8n
-    deploy:
-      resources:
-        limits:
-          cpus: '0.70'
-          memory: 2048M
-        reservations:
-          cpus: '0.10'
-          memory: 128M
 
   # Caddy can be used to reverse-proxy the n8n with HTTPS in a server. Remember to open only the 443 port in the server (and avoid opening the 5678)
   # caddy:
@@ -33,11 +25,6 @@ services:
   #     - caddy_data:/data
   #     - caddy_config:/config
   #     - ./Caddyfile:/etc/caddy/Caddyfile
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: '0.10'
-  #         memory: 256M
 
 volumes:
   n8n_data:
