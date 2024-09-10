@@ -447,10 +447,9 @@ export function prepareEmailBody(
 	let message = (this.getNodeParameter('message', itemIndex, '') as string).trim();
 
 	if (appendAttribution) {
-		const attributionText = 'This email was sent automatically with ';
-		const link = `https://n8n.io/?utm_source=n8n-internal&utm_medium=powered_by&utm_campaign=${encodeURIComponent(
-			'n8n-nodes-base.gmail',
-		)}${instanceId ? '_' + instanceId : ''}`;
+		// CHANGED HERE
+		const attributionText = 'Este e-mail foi enviado automaticamente com a ';
+		const link = 'https://www.mecaniza.cloud';
 		if (emailType === 'html') {
 			message = `
 			${message}
@@ -458,10 +457,10 @@ export function prepareEmailBody(
 			<br>
 			---
 			<br>
-			<em>${attributionText}<a href="${link}" target="_blank">n8n</a></em>
+			<em>${attributionText}<a href="${link}" target="_blank">Mecaniza</a></em>
 			`;
 		} else {
-			message = `${message}\n\n---\n${attributionText}n8n\n${'https://n8n.io'}`;
+			message = `${message}\n\n---\n${attributionText}Mecaniza\n${'https://www.mecaniza.cloud'}`;
 		}
 	}
 

@@ -301,10 +301,9 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 			}
 
 			if (appendAttribution) {
-				const attributionText = 'This email was sent automatically with ';
-				const link = `https://n8n.io/?utm_source=n8n-internal&utm_medium=powered_by&utm_campaign=${encodeURIComponent(
-					'n8n-nodes-base.emailSend',
-				)}${instanceId ? '_' + instanceId : ''}`;
+				// CHANGED HERE
+				const attributionText = 'Este e-mail foi enviado automaticamente com a ';
+				const link = 'https://www.mecaniza.cloud/';
 				if (emailFormat === 'html' || (emailFormat === 'both' && mailOptions.html)) {
 					mailOptions.html = `
 					${mailOptions.html}
@@ -312,10 +311,10 @@ export async function execute(this: IExecuteFunctions): Promise<INodeExecutionDa
 					<br>
 					---
 					<br>
-					<em>${attributionText}<a href="${link}" target="_blank">n8n</a></em>
+					<em>${attributionText}<a href="${link}" target="_blank">Mecaniza</a></em>
 					`;
 				} else {
-					mailOptions.text = `${mailOptions.text}\n\n---\n${attributionText}n8n\n${'https://n8n.io'}`;
+					mailOptions.text = `${mailOptions.text}\n\n---\n${attributionText}Mecaniza\n${'https://www.mecaniza.cloud'}`;
 				}
 			}
 
