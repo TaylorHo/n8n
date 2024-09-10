@@ -24,6 +24,8 @@ RUN rm -rf /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
 COPY --from=builder /n8n/packages/editor-ui/dist /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
 COPY --from=builder /n8n/packages/cli/dist/license.js /usr/local/lib/node_modules/n8n/dist/license.js
 COPY --from=builder /n8n/packages/cli/templates /usr/local/lib/node_modules/n8n/templates
+COPY --from=builder /n8n/packages/nodes-base/dist/nodes/Google/Gmail/GenericFunctions.js /usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist/nodes/Google/Gmail/GenericFunctions.js
+COPY --from=builder /n8n/packages/nodes-base/dist/nodes/EmailSend/v2/send.operation.js /usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist/nodes/EmailSend/v2/send.operation.js
 
 RUN set -eux; \
   npm i -g uglifycss && \
