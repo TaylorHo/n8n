@@ -1,4 +1,4 @@
-FROM node:20-alpine3.20@sha256:1a526b97cace6b4006256570efa1a29cd1fe4b96a5301f8d48e87c5139438a45 AS builder
+FROM node:20-alpine3.20@sha256:c13b26e7e602ef2f1074aef304ce6e9b7dd284c419b35d89fcf3cc8e44a8def9 AS builder
 WORKDIR /
 
 RUN apk add --update --no-cache git
@@ -8,7 +8,6 @@ RUN npm i -g pnpm
 WORKDIR /n8n/
 COPY ./assets/favicon.ico ./packages/editor-ui/public/favicon.ico
 RUN pnpm install
-RUN sed -i'' -e 's/n8n - Workflow Automation/Automação/g' ./packages/editor-ui/src/composables/useTitleChange.ts
 RUN sed -i'' -e 's/n8n.io - Workflow Automation/Automação/g' ./packages/editor-ui/index.html
 RUN sed -i'' -e 's/ea4b71/a259ff/gI' ./packages/editor-ui/public/static/**/*.svg
 RUN sed -i'' -e 's/ff6d5a/a259ff/gI' ./packages/cli/templates/*.handlebars
@@ -17,7 +16,7 @@ RUN pnpm build
 # Changing primary color (just the sed with -i wasn't working, so using it with some more steps below)
 RUN sed -i'' -e 's#--prim-color-primary-h: 7;#--prim-color-primary-h: 266;#g' ./packages/editor-ui/dist/assets/index-*.css
 
-FROM n8nio/n8n:1.58.0@sha256:95e60c4bc7d64f087640ee4bced9b27c2aa9b393347681d76c885ba733afc0ed AS main
+FROM n8nio/n8n:1.67.0@sha256:53734eaafdea67a791d57d7fdf3cc3621f24dfdca96ce922e6ec0f806c1d80dd AS main
 USER root
 
 RUN rm -rf /usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist
@@ -62,7 +61,7 @@ RUN set -eux; \
   find /usr/local -type f -name '*.js' -exec sed -i'' -e 's#//\# sourceMappingURL=.*\.map##g' {} + && \
   find /usr/local -type f -name '*.css' ! -name '*min.css' -exec sh -c 'uglifycss "$1" > "$1.min" && mv "$1.min" "$1"' _ {} \;
 
-FROM node:20-alpine3.20@sha256:1a526b97cace6b4006256570efa1a29cd1fe4b96a5301f8d48e87c5139438a45
+FROM node:20-alpine3.20@sha256:c13b26e7e602ef2f1074aef304ce6e9b7dd284c419b35d89fcf3cc8e44a8def9
 COPY --from=main /usr/local/lib/node_modules/n8n /usr/local/lib/node_modules/n8n
 
 ## Performance related environment variables
