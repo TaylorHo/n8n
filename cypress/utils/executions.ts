@@ -1,5 +1,6 @@
-import { nanoid } from 'nanoid';
 import type { IDataObject, IPinData, ITaskData, ITaskDataConnections } from 'n8n-workflow';
+import { nanoid } from 'nanoid';
+
 import { clickExecuteWorkflowButton } from '../composables/workflow';
 
 export function createMockNodeExecutionData(
@@ -15,7 +16,7 @@ export function createMockNodeExecutionData(
 	return {
 		[name]: {
 			startTime: new Date().getTime(),
-			executionTime: 0,
+			executionTime: 1,
 			executionStatus,
 			data: jsonData
 				? Object.keys(jsonData).reduce((acc, key) => {
@@ -32,6 +33,7 @@ export function createMockNodeExecutionData(
 					}, {} as ITaskDataConnections)
 				: data,
 			source: [null],
+			inputOverride,
 			...rest,
 		},
 	};
@@ -88,7 +90,7 @@ export function runMockWorkflowExecution({
 }) {
 	const executionId = nanoid(8);
 
-	cy.intercept('POST', '/rest/workflows/**/run', {
+	cy.intercept('POST', '/rest/workflows/**/run?**', {
 		statusCode: 201,
 		body: {
 			data: {

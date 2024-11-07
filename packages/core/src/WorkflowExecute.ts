@@ -2,9 +2,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+import * as assert from 'assert/strict';
 import { setMaxListeners } from 'events';
-import PCancelable from 'p-cancelable';
-
+import get from 'lodash/get';
 import type {
 	ExecutionBaseError,
 	ExecutionStatus,
@@ -45,9 +45,20 @@ import {
 	NodeExecutionOutput,
 	sleep,
 	ErrorReporterProxy,
+	ExecutionCancelledError,
 } from 'n8n-workflow';
-import get from 'lodash/get';
+import PCancelable from 'p-cancelable';
+
 import * as NodeExecuteFunctions from './NodeExecuteFunctions';
+import {
+	DirectedGraph,
+	findStartNodes,
+	findSubgraph,
+	findTriggerForPartialExecution,
+	cleanRunData,
+	recreateNodeExecutionStack,
+	handleCycles,
+} from './PartialExecutionUtils';
 
 export class WorkflowExecute {
 	private status: ExecutionStatus = 'new';
@@ -77,7 +88,7 @@ export class WorkflowExecute {
 	 * Executes the given workflow.
 	 *
 	 * @param {Workflow} workflow The workflow to execute
-	 * @param {INode[]} [startNodes] Node to start execution from
+	 * @param {INode[]} [startNode] Node to start execution from
 	 * @param {string} [destinationNode] Node to stop execution at
 	 */
 	// IMPORTANT: Do not add "async" to this function, it will then convert the
@@ -142,10 +153,6 @@ export class WorkflowExecute {
 		};
 
 		return this.processRunExecutionData(workflow);
-	}
-
-	static isAbortError(e?: ExecutionBaseError) {
-		return e?.message === 'AbortError';
 	}
 
 	forceInputNodeExecution(workflow: Workflow): boolean {
@@ -303,6 +310,79 @@ export class WorkflowExecute {
 		};
 
 		return this.processRunExecutionData(workflow);
+	}
+
+	// IMPORTANT: Do not add "async" to this function, it will then convert the
+	//            PCancelable to a regular Promise and does so not allow canceling
+	//            active executions anymore
+	// eslint-disable-next-line @typescript-eslint/promise-function-async
+	runPartialWorkflow2(
+		workflow: Workflow,
+		runData: IRunData,
+		destinationNodeName?: string,
+		pinData?: IPinData,
+	): PCancelable<IRun> {
+		// TODO: Refactor the call-site to make `destinationNodeName` a required
+		// after removing the old partial execution flow.
+		assert.ok(
+			destinationNodeName,
+			'a destinationNodeName is required for the new partial execution flow',
+		);
+
+		const destination = workflow.getNode(destinationNodeName);
+		assert.ok(
+			destination,
+			`Could not find a node with the name ${destinationNodeName} in the workflow.`,
+		);
+
+		// 1. Find the Trigger
+		const trigger = findTriggerForPartialExecution(workflow, destinationNodeName);
+		if (trigger === undefined) {
+			throw new ApplicationError(
+				'The destination node is not connected to any trigger. Partial executions need a trigger.',
+			);
+		}
+
+		// 2. Find the Subgraph
+		const graph = DirectedGraph.fromWorkflow(workflow);
+		const subgraph = findSubgraph({ graph, destination, trigger });
+		const filteredNodes = subgraph.getNodes();
+
+		// 3. Find the Start Nodes
+		let startNodes = findStartNodes({ graph: subgraph, trigger, destination, runData });
+
+		// 4. Detect Cycles
+		// 5. Handle Cycles
+		startNodes = handleCycles(graph, startNodes, trigger);
+
+		// 6. Clean Run Data
+		const newRunData: IRunData = cleanRunData(runData, graph, startNodes);
+
+		// 7. Recreate Execution Stack
+		const { nodeExecutionStack, waitingExecution, waitingExecutionSource } =
+			recreateNodeExecutionStack(subgraph, new Set(startNodes), runData, pinData ?? {});
+
+		// 8. Execute
+		this.status = 'running';
+		this.runExecutionData = {
+			startData: {
+				destinationNode: destinationNodeName,
+				runNodeFilter: Array.from(filteredNodes.values()).map((node) => node.name),
+			},
+			resultData: {
+				runData: newRunData,
+				pinData,
+			},
+			executionData: {
+				contextData: {},
+				nodeExecutionStack,
+				metadata: {},
+				waitingExecution,
+				waitingExecutionSource,
+			},
+		};
+
+		return this.processRunExecutionData(subgraph.toWorkflow({ ...workflow }));
 	}
 
 	/**
@@ -971,7 +1051,7 @@ export class WorkflowExecute {
 						this.runExecutionData.startData!.runNodeFilter.indexOf(executionNode.name) === -1
 					) {
 						// If filter is set and node is not on filter skip it, that avoids the problem that it executes
-						// leafs that are parallel to a selected destinationNode. Normally it would execute them because
+						// leaves that are parallel to a selected destinationNode. Normally it would execute them because
 						// they have the same parent and it executes all child nodes.
 						continue;
 					}
@@ -1396,7 +1476,7 @@ export class WorkflowExecute {
 							// Add the execution data again so that it can get restarted
 							this.runExecutionData.executionData!.nodeExecutionStack.unshift(executionData);
 							// Only execute the nodeExecuteAfter hook if the node did not get aborted
-							if (!WorkflowExecute.isAbortError(executionError)) {
+							if (!this.isCancelled) {
 								await this.executeHook('nodeExecuteAfter', [
 									executionNode.name,
 									taskData,
@@ -1651,9 +1731,9 @@ export class WorkflowExecute {
 							// array as this shows that the parent nodes executed but they did not have any
 							// data to pass on.
 							const inputsWithData = this.runExecutionData
-								.executionData!.waitingExecution[
-									nodeName
-								][firstRunIndex].main.map((data, index) => (data === null ? null : index))
+								.executionData!.waitingExecution[nodeName][firstRunIndex].main.map((data, index) =>
+									data === null ? null : index,
+								)
 								.filter((data) => data !== null);
 
 							if (requiredInputs !== undefined) {
@@ -1672,7 +1752,7 @@ export class WorkflowExecute {
 										continue;
 									}
 								} else {
-									// A certain amout of inputs are required (amount of inputs)
+									// A certain amount of inputs are required (amount of inputs)
 									if (inputsWithData.length < requiredInputs) {
 										continue;
 									}
@@ -1730,7 +1810,7 @@ export class WorkflowExecute {
 								// Node to add did not get found, rather an empty one removed so continue with search
 								waitingNodes = Object.keys(this.runExecutionData.executionData!.waitingExecution);
 								// Set counter to start again from the beginning. Set it to -1 as it auto increments
-								// after run. So only like that will we end up again ot 0.
+								// after run. So only like that will we end up again at 0.
 								i = -1;
 							}
 						}
@@ -1744,7 +1824,7 @@ export class WorkflowExecute {
 						return await this.processSuccessExecution(
 							startedAt,
 							workflow,
-							new WorkflowOperationError('Workflow has been canceled or timed out'),
+							new ExecutionCancelledError(this.additionalData.executionId ?? 'unknown'),
 							closeFunction,
 						);
 					}
@@ -1845,7 +1925,7 @@ export class WorkflowExecute {
 
 		this.moveNodeMetadata();
 		// Prevent from running the hook if the error is an abort error as it was already handled
-		if (!WorkflowExecute.isAbortError(executionError)) {
+		if (!this.isCancelled) {
 			await this.executeHook('workflowExecuteAfter', [fullRunData, newStaticData]);
 		}
 
@@ -1875,5 +1955,9 @@ export class WorkflowExecute {
 		};
 
 		return fullRunData;
+	}
+
+	private get isCancelled() {
+		return this.abortController.signal.aborted;
 	}
 }

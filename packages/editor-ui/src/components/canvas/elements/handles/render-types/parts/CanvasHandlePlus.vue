@@ -7,12 +7,14 @@ const props = withDefaults(
 		handleClasses?: string;
 		plusSize?: number;
 		lineSize?: number;
+		type?: 'success' | 'secondary' | 'default';
 	}>(),
 	{
 		position: 'right',
 		handleClasses: undefined,
 		plusSize: 24,
 		lineSize: 46,
+		type: 'default',
 	},
 );
 
@@ -22,7 +24,12 @@ const emit = defineEmits<{
 
 const style = useCssModule();
 
-const classes = computed(() => [style.wrapper, style[props.position], props.handleClasses]);
+const classes = computed(() => [
+	style.wrapper,
+	style[props.position],
+	style[props.type],
+	props.handleClasses,
+]);
 
 const viewBox = computed(() => {
 	switch (props.position) {
@@ -91,7 +98,7 @@ function onClick(event: MouseEvent) {
 <template>
 	<svg :class="classes" :viewBox="`0 0 ${viewBox.width} ${viewBox.height}`" :style="styles">
 		<line
-			:class="handleClasses"
+			:class="[handleClasses, $style.line]"
 			:x1="linePosition[0][0]"
 			:y1="linePosition[0][1]"
 			:x2="linePosition[1][0]"
@@ -113,7 +120,7 @@ function onClick(event: MouseEvent) {
 				stroke="var(--color-foreground-xdark)"
 				stroke-width="2"
 				rx="4"
-				fill="#ffffff"
+				fill="var(--color-foreground-xlight)"
 			/>
 			<path
 				:class="[handleClasses, 'clickable']"
@@ -127,6 +134,28 @@ function onClick(event: MouseEvent) {
 <style lang="scss" module>
 .wrapper {
 	position: relative;
+
+	&.secondary {
+		.line {
+			stroke: var(--node-type-supplemental-color);
+		}
+
+		.plus {
+			path {
+				fill: var(--node-type-supplemental-color);
+			}
+
+			rect {
+				stroke: var(--node-type-supplemental-color);
+			}
+		}
+	}
+
+	&.success {
+		.line {
+			stroke: var(--color-success);
+		}
+	}
 }
 
 .plus {

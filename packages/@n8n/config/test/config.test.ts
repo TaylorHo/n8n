@@ -1,6 +1,7 @@
 import fs from 'fs';
-import { Container } from 'typedi';
 import { mock } from 'jest-mock-extended';
+import { Container } from 'typedi';
+
 import { GlobalConfig } from '../src/index';
 
 jest.mock('fs');
@@ -47,7 +48,7 @@ describe('GlobalConfig', () => {
 				poolSize: 2,
 				port: 5432,
 				schema: 'public',
-				connectionTimeoutMs: 1000,
+				connectionTimeoutMs: 20_000,
 				ssl: {
 					ca: '',
 					cert: '',
@@ -176,6 +177,7 @@ describe('GlobalConfig', () => {
 			formTest: 'form-test',
 			formWaiting: 'form-waiting',
 			payloadSizeMax: 16,
+			formDataFileSizeMax: 200,
 			rest: 'rest',
 			webhook: 'webhook',
 			webhookTest: 'webhook-test',
@@ -196,6 +198,7 @@ describe('GlobalConfig', () => {
 			health: {
 				active: false,
 				port: 5678,
+				address: '0.0.0.0',
 			},
 			bull: {
 				redis: {
@@ -208,7 +211,6 @@ describe('GlobalConfig', () => {
 					clusterNodes: '',
 					tls: false,
 				},
-				queueRecoveryInterval: 60,
 				gracefulShutdownTimeout: 30,
 				prefix: 'bull',
 				settings: {
@@ -219,12 +221,69 @@ describe('GlobalConfig', () => {
 				},
 			},
 		},
+		taskRunners: {
+			disabled: true,
+			mode: 'internal_childprocess',
+			path: '/runners',
+			authToken: '',
+			listenAddress: '127.0.0.1',
+			maxPayload: 1024 * 1024 * 1024,
+			port: 5679,
+			launcherPath: '',
+			launcherRunner: 'javascript',
+			maxOldSpaceSize: '',
+			maxConcurrency: 5,
+		},
+		sentry: {
+			backendDsn: '',
+			frontendDsn: '',
+		},
+		logging: {
+			level: 'info',
+			outputs: ['console'],
+			file: {
+				fileCountMax: 100,
+				fileSizeMax: 16,
+				location: 'logs/n8n.log',
+			},
+			scopes: [],
+		},
+		multiMainSetup: {
+			enabled: false,
+			ttl: 10,
+			interval: 3,
+		},
+		generic: {
+			timezone: 'America/New_York',
+			releaseChannel: 'dev',
+			gracefulShutdownTimeout: 30,
+		},
+		license: {
+			serverUrl: 'https://license.n8n.io/v1',
+			autoRenewalEnabled: true,
+			autoRenewOffset: 60 * 60 * 72,
+			activationKey: '',
+			tenantId: 1,
+			cert: '',
+		},
+		security: {
+			restrictFileAccessTo: '',
+			blockFileAccessToN8nFiles: true,
+			daysAbandonedWorkflow: 90,
+		},
+		pruning: {
+			isEnabled: true,
+			maxAge: 336,
+			maxCount: 10_000,
+			hardDeleteBuffer: 1,
+			hardDeleteInterval: 15,
+			softDeleteInterval: 60,
+		},
 	};
 
 	it('should use all default values when no env variables are defined', () => {
 		process.env = {};
 		const config = Container.get(GlobalConfig);
-
 		expect(deepCopy(config)).toEqual(defaultConfig);
 		expect(mockFs.readFileSync).not.toHaveBeenCalled();
 	});

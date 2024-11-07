@@ -1,4 +1,4 @@
-import { Service } from 'typedi';
+import { LoadOptionsContext, NodeExecuteFunctions } from 'n8n-core';
 import type {
 	ILoadOptions,
 	ILoadOptionsFunctions,
@@ -19,7 +19,8 @@ import type {
 	IDataObject,
 } from 'n8n-workflow';
 import { Workflow, RoutingNode, ApplicationError } from 'n8n-workflow';
-import { NodeExecuteFunctions } from 'n8n-core';
+import { Service } from 'typedi';
+
 import { NodeTypes } from '@/node-types';
 
 @Service()
@@ -252,6 +253,6 @@ export class DynamicNodeParametersService {
 		workflow: Workflow,
 	) {
 		const node = workflow.nodes['Temp-Node'];
-		return NodeExecuteFunctions.getLoadOptionsFunctions(workflow, node, path, additionalData);
+		return new LoadOptionsContext(workflow, node, additionalData, path);
 	}
 }

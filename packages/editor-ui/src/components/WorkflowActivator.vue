@@ -3,10 +3,12 @@ import { useToast } from '@/composables/useToast';
 import { useWorkflowActivate } from '@/composables/useWorkflowActivate';
 import { useWorkflowsStore } from '@/stores/workflows.store';
 import { getActivatableTriggerNodes } from '@/utils/nodeTypesUtils';
-import { computed } from 'vue';
+import type { VNode } from 'vue';
+import { computed, h } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { PermissionsRecord } from '@/permissions';
-import { PLACEHOLDER_EMPTY_WORKFLOW_ID } from '@/constants';
+import { EXECUTE_WORKFLOW_TRIGGER_NODE_TYPE, PLACEHOLDER_EMPTY_WORKFLOW_ID } from '@/constants';
+import WorkflowActivationErrorMessage from './WorkflowActivationErrorMessage.vue';
 
 const props = defineProps<{
 	workflowActive: boolean;
@@ -41,6 +43,17 @@ const containsTrigger = computed((): boolean => {
 	return foundTriggers.length > 0;
 });
 
+const containsOnlyExecuteWorkflowTrigger = computed((): boolean => {
+	const foundActiveTriggers = workflowsStore.workflowTriggerNodes.filter(
+		(trigger) => !trigger.disabled,
+	);
+	const foundTriggers = foundActiveTriggers.filter(
+		(trigger) => trigger.type === EXECUTE_WORKFLOW_TRIGGER_NODE_TYPE,
+	);
+
+	return foundTriggers.length > 0 && foundTriggers.length === foundActiveTriggers.length;
+});
+
 const isNewWorkflow = computed(
 	() =>
 		!props.workflowId ||
@@ -61,7 +74,7 @@ async function activeChanged(newActiveState: boolean) {
 }
 
 async function displayActivationError() {
-	let errorMessage: string;
+	let errorMessage: string | VNode;
 	try {
 		const errorData = await workflowsStore.getActivationError(props.workflowId);
 
@@ -70,10 +83,9 @@ async function displayActivationError() {
 				'workflowActivator.showMessage.displayActivationError.message.errorDataUndefined',
 			);
 		} else {
-			errorMessage = i18n.baseText(
-				'workflowActivator.showMessage.displayActivationError.message.errorDataNotUndefined',
-				{ interpolate: { message: errorData } },
-			);
+			errorMessage = h(WorkflowActivationErrorMessage, {
+				message: errorData,
+			});
 		}
 	} catch (error) {
 		errorMessage = i18n.baseText(
@@ -86,7 +98,6 @@ async function displayActivationError() {
 		message: errorMessage,
 		type: 'warning',
 		duration: 0,
-		dangerouslyUseHTMLString: true,
 	});
 }
 </script>
@@ -109,7 +120,13 @@ async function displayActivationError() {
 		<n8n-tooltip :disabled="!disabled" placement="bottom">
 			<template #content>
 				<div>
-					{{ i18n.baseText('workflowActivator.thisWorkflowHasNoTriggerNodes') }}
+					{{
+						i18n.baseText(
+							containsOnlyExecuteWorkflowTrigger
+								? 'workflowActivator.thisWorkflowHasOnlyOneExecuteWorkflowTriggerNode'
+								: 'workflowActivator.thisWorkflowHasNoTriggerNodes',
+						)
+					}}
 				</div>
 			</template>
 			<el-switch
@@ -138,7 +155,7 @@ async function displayActivationError() {
 				<template #content>
 					<div
 						@click="displayActivationError"
-						v-html="i18n.baseText('workflowActivator.theWorkflowIsSetToBeActiveBut')"
+						v-n8n-html="i18n.baseText('workflowActivator.theWorkflowIsSetToBeActiveBut')"
 					></div>
 				</template>
 				<font-awesome-icon icon="exclamation-triangle" @click="displayActivationError" />

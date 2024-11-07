@@ -1,11 +1,10 @@
-import { Container } from 'typedi';
-
 import type { IRunExecutionData, ITaskData, IWorkflowBase } from 'n8n-workflow';
 import { ErrorReporterProxy as ErrorReporter } from 'n8n-workflow';
+import { Container } from 'typedi';
 
-import { Logger } from '@/logger';
 import { ExecutionRepository } from '@/databases/repositories/execution.repository';
 import { toSaveSettings } from '@/execution-lifecycle-hooks/to-save-settings';
+import { Logger } from '@/logging/logger.service';
 
 export async function saveExecutionProgress(
 	workflowData: IWorkflowBase,
@@ -17,7 +16,7 @@ export async function saveExecutionProgress(
 ) {
 	const saveSettings = toSaveSettings(workflowData.settings);
 
-	if (!saveSettings.progress) return;
+	if (!saveSettings.progress && !executionData.waitTill) return;
 
 	const logger = Container.get(Logger);
 

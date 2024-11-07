@@ -1,11 +1,14 @@
-import { CanvasNodeHandleKey, CanvasNodeKey } from '@/constants';
-import { ref } from 'vue';
+import { CanvasKey, CanvasNodeHandleKey, CanvasNodeKey } from '@/constants';
+import { computed, ref } from 'vue';
 import type {
+	CanvasInjectionData,
 	CanvasNode,
 	CanvasNodeData,
 	CanvasNodeEventBusEvents,
 	CanvasNodeHandleInjectionData,
 	CanvasNodeInjectionData,
+	ConnectStartEvent,
+	ExecutionOutputMapData,
 } from '@/types';
 import { CanvasConnectionMode, CanvasNodeRenderType } from '@/types';
 import { NodeConnectionType } from 'n8n-workflow';
@@ -25,7 +28,7 @@ export function createCanvasNodeData({
 	execution = { running: false },
 	issues = { items: [], visible: false },
 	pinnedData = { count: 0, visible: false },
-	runData = { count: 0, visible: false },
+	runData = { outputMap: {}, iterations: 0, visible: false },
 	render = {
 		type: CanvasNodeRenderType.Default,
 		options: { configurable: false, configuration: false, trigger: false },
@@ -87,6 +90,21 @@ export function createCanvasNodeProps({
 	};
 }
 
+export function createCanvasProvide({
+	isExecuting = false,
+	connectingHandle = undefined,
+}: {
+	isExecuting?: boolean;
+	connectingHandle?: ConnectStartEvent;
+} = {}) {
+	return {
+		[String(CanvasKey)]: {
+			isExecuting: ref(isExecuting),
+			connectingHandle: ref(connectingHandle),
+		} satisfies CanvasInjectionData,
+	};
+}
+
 export function createCanvasNodeProvide({
 	id = 'node',
 	label = 'Test Node',
@@ -104,7 +122,7 @@ export function createCanvasNodeProvide({
 } = {}) {
 	const props = createCanvasNodeProps({ id, label, selected, readOnly, data });
 	return {
-		[`${CanvasNodeKey}`]: {
+		[String(CanvasNodeKey)]: {
 			id: ref(props.id),
 			label: ref(props.label),
 			selected: ref(props.selected),
@@ -119,22 +137,34 @@ export function createCanvasHandleProvide({
 	label = 'Handle',
 	mode = CanvasConnectionMode.Input,
 	type = NodeConnectionType.Main,
+	index = 0,
+	runData,
 	isConnected = false,
 	isConnecting = false,
+	isReadOnly = false,
+	isRequired = false,
 }: {
 	label?: string;
 	mode?: CanvasConnectionMode;
 	type?: NodeConnectionType;
+	index?: number;
+	runData?: ExecutionOutputMapData;
 	isConnected?: boolean;
 	isConnecting?: boolean;
+	isReadOnly?: boolean;
+	isRequired?: boolean;
 } = {}) {
 	return {
-		[`${CanvasNodeHandleKey}`]: {
+		[String(CanvasNodeHandleKey)]: {
 			label: ref(label),
 			mode: ref(mode),
 			type: ref(type),
-			isConnected: ref(isConnected),
+			index: ref(index),
+			isConnected: computed(() => isConnected),
 			isConnecting: ref(isConnecting),
+			isReadOnly: ref(isReadOnly),
+			isRequired: ref(isRequired),
+			runData: ref(runData),
 		} satisfies CanvasNodeHandleInjectionData,
 	};
 }

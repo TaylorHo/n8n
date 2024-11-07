@@ -1,42 +1,38 @@
-import fs from 'node:fs';
-import { Container, Service } from 'typedi';
-import uniq from 'lodash/uniq';
+import type { FrontendSettings, ITelemetrySettings } from '@n8n/api-types';
+import { GlobalConfig, FrontendConfig, SecurityConfig } from '@n8n/config';
 import { createWriteStream } from 'fs';
 import { mkdir } from 'fs/promises';
-import path from 'path';
-import { GlobalConfig } from '@n8n/config';
-import type {
-	ICredentialType,
-	IN8nUISettings,
-	INodeTypeBaseDescription,
-	ITelemetrySettings,
-} from 'n8n-workflow';
+import uniq from 'lodash/uniq';
 import { InstanceSettings } from 'n8n-core';
+import type { ICredentialType, INodeTypeBaseDescription } from 'n8n-workflow';
+import fs from 'node:fs';
+import path from 'path';
+import { Container, Service } from 'typedi';
 
 import config from '@/config';
-import { LICENSE_FEATURES } from '@/constants';
-import { CredentialsOverwrites } from '@/credentials-overwrites';
+import { LICENSE_FEATURES, N8N_VERSION } from '@/constants';
 import { CredentialTypes } from '@/credential-types';
-import { LoadNodesAndCredentials } from '@/load-nodes-and-credentials';
-import { License } from '@/license';
-import { getCurrentAuthenticationMethod } from '@/sso/sso-helpers';
-import { getLdapLoginLabel } from '@/ldap/helpers.ee';
-import { getSamlLoginLabel } from '@/sso/saml/saml-helpers';
+import { CredentialsOverwrites } from '@/credentials-overwrites';
 import { getVariablesLimit } from '@/environments/variables/environment-helpers';
+import { getLdapLoginLabel } from '@/ldap/helpers.ee';
+import { License } from '@/license';
+import { LoadNodesAndCredentials } from '@/load-nodes-and-credentials';
+import { Logger } from '@/logging/logger.service';
+import { isApiEnabled } from '@/public-api';
+import type { CommunityPackagesService } from '@/services/community-packages.service';
+import { getSamlLoginLabel } from '@/sso/saml/saml-helpers';
+import { getCurrentAuthenticationMethod } from '@/sso/sso-helpers';
+import { UserManagementMailer } from '@/user-management/email';
 import {
 	getWorkflowHistoryLicensePruneTime,
 	getWorkflowHistoryPruneTime,
 } from '@/workflows/workflow-history/workflow-history-helper.ee';
-import { UserManagementMailer } from '@/user-management/email';
-import type { CommunityPackagesService } from '@/services/community-packages.service';
-import { Logger } from '@/logger';
+
 import { UrlService } from './url.service';
-import { EventService } from '@/events/event.service';
-import { isApiEnabled } from '@/public-api';
 
 @Service()
 export class FrontendService {
-	settings: IN8nUISettings;
+	settings: FrontendSettings;
 
 	private communityPackagesService?: CommunityPackagesService;
 
@@ -50,7 +46,8 @@ export class FrontendService {
 		private readonly mailer: UserManagementMailer,
 		private readonly instanceSettings: InstanceSettings,
 		private readonly urlService: UrlService,
-		private readonly eventService: EventService,
+		private readonly securityConfig: SecurityConfig,
+		private readonly frontendConfig: FrontendConfig,
 	) {
 		loadNodesAndCredentials.addPostProcessor(async () => await this.generateTypes());
 		void this.generateTypes();
@@ -93,6 +90,7 @@ export class FrontendService {
 			endpointFormWaiting: this.globalConfig.endpoints.formWaiting,
 			endpointWebhook: this.globalConfig.endpoints.webhook,
 			endpointWebhookTest: this.globalConfig.endpoints.webhookTest,
+			endpointWebhookWaiting: this.globalConfig.endpoints.webhookWaiting,
 			saveDataErrorExecution: config.getEnv('executions.saveDataOnError'),
 			saveDataSuccessExecution: config.getEnv('executions.saveDataOnSuccess'),
 			saveManualExecutions: config.getEnv('executions.saveDataManualExecutions'),
@@ -100,17 +98,17 @@ export class FrontendService {
 			executionTimeout: config.getEnv('executions.timeout'),
 			maxExecutionTimeout: config.getEnv('executions.maxTimeout'),
 			workflowCallerPolicyDefaultOption: this.globalConfig.workflows.callerPolicyDefaultOption,
-			timezone: config.getEnv('generic.timezone'),
+			timezone: this.globalConfig.generic.timezone,
 			urlBaseWebhook: this.urlService.getWebhookBaseUrl(),
 			urlBaseEditor: instanceBaseUrl,
 			binaryDataMode: config.getEnv('binaryDataManager.mode'),
 			nodeJsVersion: process.version.replace(/^v/, ''),
-			versionCli: '',
+			versionCli: N8N_VERSION,
 			concurrency: config.getEnv('executions.concurrency.productionLimit'),
 			authCookie: {
 				secure: config.getEnv('secure_cookie'),
 			},
-			releaseChannel: config.getEnv('generic.releaseChannel'),
+			releaseChannel: this.globalConfig.generic.releaseChannel,
 			oauthCallbackUrls: {
 				oauth1: `${instanceBaseUrl}/${restEndpoint}/oauth1-credential/callback`,
 				oauth2: `${instanceBaseUrl}/${restEndpoint}/oauth2-credential/callback`,
@@ -128,7 +126,7 @@ export class FrontendService {
 				apiKey: config.getEnv('diagnostics.config.posthog.apiKey'),
 				autocapture: false,
 				disableSessionRecording: config.getEnv('deployment.type') !== 'cloud',
-				debug: config.getEnv('logs.level') === 'debug',
+				debug: this.globalConfig.logging.level === 'debug',
 			},
 			personalizationSurveyEnabled:
 				config.getEnv('personalization.enabled') && config.getEnv('diagnostics.enabled'),
@@ -158,7 +156,7 @@ export class FrontendService {
 				},
 			},
 			workflowTagsDisabled: config.getEnv('workflowTagsDisabled'),
-			logLevel: config.getEnv('logs.level'),
+			logLevel: this.globalConfig.logging.level,
 			hiringBannerEnabled: config.getEnv('hiringBanner.enabled'),
 			aiAssistant: {
 				enabled: false,
@@ -173,7 +171,6 @@ export class FrontendService {
 			deployment: {
 				type: config.getEnv('deployment.type'),
 			},
-			isNpmAvailable: false,
 			allowedModules: {
 				builtIn: process.env.NODE_FUNCTION_ALLOW_BUILTIN?.split(',') ?? undefined,
 				external: process.env.NODE_FUNCTION_ALLOW_EXTERNAL?.split(',') ?? undefined,
@@ -207,7 +204,7 @@ export class FrontendService {
 			hideUsagePage: config.getEnv('hideUsagePage'),
 			license: {
 				consumerId: 'unknown',
-				environment: config.getEnv('license.tenantId') === 1 ? 'production' : 'staging',
+				environment: this.globalConfig.license.tenantId === 1 ? 'production' : 'staging',
 			},
 			variables: {
 				limit: 0,
@@ -218,21 +215,22 @@ export class FrontendService {
 			banners: {
 				dismissed: [],
 			},
-			ai: {
-				enabled: config.getEnv('ai.enabled'),
+			askAi: {
+				enabled: false,
 			},
 			workflowHistory: {
 				pruneTime: -1,
 				licensePruneTime: -1,
 			},
 			pruning: {
-				isEnabled: config.getEnv('executions.pruneData'),
-				maxAge: config.getEnv('executions.pruneDataMaxAge'),
-				maxCount: config.getEnv('executions.pruneDataMaxCount'),
+				isEnabled: this.globalConfig.pruning.isEnabled,
+				maxAge: this.globalConfig.pruning.maxAge,
+				maxCount: this.globalConfig.pruning.maxCount,
 			},
 			security: {
-				blockFileAccessToN8nFiles: config.getEnv('security.blockFileAccessToN8nFiles'),
+				blockFileAccessToN8nFiles: this.securityConfig.blockFileAccessToN8nFiles,
 			},
+			betaFeatures: this.frontendConfig.betaFeatures,
 		};
 	}
 
@@ -247,9 +245,7 @@ export class FrontendService {
 		this.writeStaticJSON('credentials', credentials);
 	}
 
-	getSettings(pushRef?: string): IN8nUISettings {
-		this.eventService.emit('session-started', { pushRef });
-
+	getSettings(): FrontendSettings {
 		const restEndpoint = this.globalConfig.endpoints.rest;
 
 		// Update all urls, in case `WEBHOOK_URL` was updated by `--tunnel`
@@ -265,9 +261,7 @@ export class FrontendService {
 		Object.assign(this.settings.userManagement, {
 			quota: this.license.getUsersLimit(),
 			authenticationMethod: getCurrentAuthenticationMethod(),
-			showSetupOnFirstLoad:
-				!config.getEnv('userManagement.isInstanceOwnerSetUp') &&
-				!config.getEnv('deployment.type').startsWith('desktop_'),
+			showSetupOnFirstLoad: !config.getEnv('userManagement.isInstanceOwnerSetUp'),
 		});
 
 		let dismissedBanners: string[] = [];
@@ -284,6 +278,7 @@ export class FrontendService {
 		const isS3Available = config.getEnv('binaryDataManager.availableModes').includes('s3');
 		const isS3Licensed = this.license.isBinaryDataS3Licensed();
 		const isAiAssistantEnabled = this.license.isAiAssistantEnabled();
+		const isAskAiEnabled = this.license.isAskAiEnabled();
 
 		this.settings.license.planName = this.license.getPlanName();
 		this.settings.license.consumerId = this.license.getConsumerId();
@@ -340,6 +335,10 @@ export class FrontendService {
 			this.settings.aiAssistant.enabled = isAiAssistantEnabled;
 		}
 
+		if (isAskAiEnabled) {
+			this.settings.askAi.enabled = isAskAiEnabled;
+		}
+
 		this.settings.mfa.enabled = config.get('mfa.enabled');
 
 		this.settings.executionMode = config.getEnv('executions.mode');
@@ -349,10 +348,6 @@ export class FrontendService {
 		this.settings.enterprise.projects.team.limit = this.license.getTeamProjectLimit();
 
 		return this.settings;
-	}
-
-	addToSettings(newSettings: Record<string, unknown>) {
-		this.settings = { ...this.settings, ...newSettings };
 	}
 
 	private writeStaticJSON(name: string, data: INodeTypeBaseDescription[] | ICredentialType[]) {

@@ -38,7 +38,6 @@ const SettingsCommunityNodesView = async () =>
 	await import('./views/SettingsCommunityNodesView.vue');
 const SettingsApiView = async () => await import('./views/SettingsApiView.vue');
 const SettingsLogStreamingView = async () => await import('./views/SettingsLogStreamingView.vue');
-const SettingsFakeDoorView = async () => await import('./views/SettingsFakeDoorView.vue');
 const SetupView = async () => await import('./views/SetupView.vue');
 const SigninView = async () => await import('./views/SigninView.vue');
 const SignupView = async () => await import('./views/SignupView.vue');
@@ -328,7 +327,6 @@ export const routes: RouteRecordRaw[] = [
 			default: NodeView,
 		},
 		meta: {
-			nodeView: true,
 			middleware: ['authenticated'],
 			middlewareOptions: {
 				authenticated: {
@@ -577,12 +575,8 @@ export const routes: RouteRecordRaw[] = [
 					settingsView: SettingsSso,
 				},
 				meta: {
-					middleware: ['authenticated', 'rbac', 'custom'],
+					middleware: ['authenticated', 'rbac'],
 					middlewareOptions: {
-						custom: () => {
-							const settingsStore = useSettingsStore();
-							return !settingsStore.isDesktopDeployment;
-						},
 						rbac: {
 							scope: 'saml:manage',
 						},
@@ -648,24 +642,6 @@ export const routes: RouteRecordRaw[] = [
 				},
 			},
 			{
-				path: 'coming-soon/:featureId',
-				name: VIEWS.FAKE_DOOR,
-				components: {
-					settingsView: SettingsFakeDoorView,
-				},
-				meta: {
-					middleware: ['authenticated'],
-					telemetry: {
-						pageCategory: 'settings',
-						getProperties(route: RouteLocation) {
-							return {
-								feature: route.params.featureId,
-							};
-						},
-					},
-				},
-			},
-			{
 				path: 'ldap',
 				name: VIEWS.LDAP_SETTINGS,
 				components: {
@@ -694,11 +670,7 @@ export const routes: RouteRecordRaw[] = [
 				custom: () => {
 					const settingsStore = useSettingsStore();
 					const ssoStore = useSSOStore();
-					return (
-						ssoStore.isEnterpriseSamlEnabled &&
-						!settingsStore.isCloudDeployment &&
-						!settingsStore.isDesktopDeployment
-					);
+					return ssoStore.isEnterpriseSamlEnabled && !settingsStore.isCloudDeployment;
 				},
 			},
 			telemetry: {
@@ -740,7 +712,7 @@ function withCanvasReadOnlyMeta(route: RouteRecordRaw) {
 }
 
 const router = createRouter({
-	history: createWebHistory(import.meta.env.DEV ? '/' : window.BASE_PATH ?? '/'),
+	history: createWebHistory(import.meta.env.DEV ? '/' : (window.BASE_PATH ?? '/')),
 	scrollBehavior(to: RouteLocationNormalized, _, savedPosition) {
 		// saved position == null means the page is NOT visited from history (back button)
 		if (savedPosition === null && to.name === VIEWS.TEMPLATES && to.meta?.setScrollPosition) {

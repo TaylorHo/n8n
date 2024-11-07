@@ -14,6 +14,7 @@ import { useNodeType } from '@/composables/useNodeType';
 import { usePinnedData } from '@/composables/usePinnedData';
 import { useTelemetry } from '@/composables/useTelemetry';
 import { useI18n } from '@/composables/useI18n';
+import { waitingNodeTooltip } from '@/utils/executionUtils';
 
 // Types
 
@@ -34,7 +35,7 @@ type Props = {
 	isReadOnly?: boolean;
 	linkedRuns?: boolean;
 	canLinkRuns?: boolean;
-	pushRef?: string;
+	pushRef: string;
 	blockUI?: boolean;
 	isProductionExecutionPreview?: boolean;
 	isPaneActive?: boolean;
@@ -99,14 +100,15 @@ const isTriggerNode = computed(() => {
 });
 
 const hasAiMetadata = computed(() => {
+	if (isNodeRunning.value || !workflowRunData.value) {
+		return false;
+	}
+
 	if (node.value) {
-		const resultData = workflowsStore.getWorkflowResultDataByNodeName(node.value.name);
+		const connectedSubNodes = props.workflow.getParentNodes(node.value.name, 'ALL_NON_MAIN');
+		const resultData = connectedSubNodes.map(workflowsStore.getWorkflowResultDataByNodeName);
 
-		if (!resultData || !Array.isArray(resultData) || resultData.length === 0) {
-			return false;
-		}
-
-		return !!resultData[resultData.length - 1].metadata;
+		return resultData && Array.isArray(resultData) && resultData.length > 0;
 	}
 	return false;
 });
@@ -122,7 +124,7 @@ const defaultOutputMode = computed<OutputType>(() => {
 });
 
 const isNodeRunning = computed(() => {
-	return !!node.value && workflowsStore.isNodeExecuting(node.value.name);
+	return workflowRunning.value && !!node.value && workflowsStore.isNodeExecuting(node.value.name);
 });
 
 const workflowRunning = computed(() => {
@@ -294,6 +296,7 @@ const activatePane = () => {
 		:block-u-i="blockUI"
 		:is-production-execution-preview="isProductionExecutionPreview"
 		:is-pane-active="isPaneActive"
+		:hide-pagination="outputMode === 'logs'"
 		pane-type="output"
 		:data-output-type="outputMode"
 		@activate-pane="activatePane"
@@ -348,6 +351,11 @@ const activatePane = () => {
 			</n8n-text>
 		</template>
 
+		<template #node-waiting>
+			<n8n-text :bold="true" color="text-dark" size="large">Waiting for input</n8n-text>
+			<n8n-text v-n8n-html="waitingNodeTooltip()"></n8n-text>
+		</template>
+
 		<template #no-output-data>
 			<n8n-text :bold="true" color="text-dark" size="large">{{
 				$locale.baseText('ndv.output.noOutputData.title')
@@ -362,7 +370,7 @@ const activatePane = () => {
 		</template>
 
 		<template v-if="outputMode === 'logs' && node" #content>
-			<RunDataAi :node="node" :run-index="runIndex" />
+			<RunDataAi :node="node" :run-index="runIndex" :workflow="workflow" />
 		</template>
 
 		<template #recovered-artificial-output-data>
